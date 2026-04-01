@@ -1,0 +1,23 @@
+# =============================================================================
+# Terraform Variables for Cloudflare Configuration
+# Copy to terraform.tfvars and fill in your values:
+#   cp terraform.tfvars.sample terraform.tfvars
+# =============================================================================
+
+# Cloudflare API token (create at https://dash.cloudflare.com/profile/api-tokens)
+# Required permissions:
+#   - Account > Cloudflare Tunnel > Edit
+#   - Account > Access: Apps and Policies > Edit
+#   - Zone > DNS > Edit
+#   - Zone > Zone > Read
+cloudflare_api_token = "your-api-token-here"
+
+# Found at: Cloudflare Dashboard > your domain > Overview > API (right sidebar)
+cloudflare_account_id = "your-account-id-here"
+cloudflare_zone_id    = "your-zone-id-here"
+
+# Your domain name
+domain = "example.com"
+
+# Email address for Cloudflare Zero Trust OTP (all services)
+admin_email = "your-email@example.com"
