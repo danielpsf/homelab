@@ -1,0 +1,245 @@
+name: homelab
+
+networks:
+  tunnel:
+  monitoring:
+
+volumes:
+  prometheus_data:
+    external: true
+    name: homelab_prometheus_data
+  grafana_data:
+    external: true
+    name: homelab_grafana_data
+  portainer_data:
+  homarr_data:
+  n8n_data:
+  stirling_data:
+
+secrets:
+  portainer_admin_password:
+    file: ./secrets/portainer_admin_password
+
+services:
+  # ---------------------------------------------------------------------------
+  # Cloudflare Tunnel — zero-trust ingress for all services
+  # ---------------------------------------------------------------------------
+  cloudflared:
+    image: ${CLOUDFLARED_IMAGE}
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - tunnel
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+
+  # ---------------------------------------------------------------------------
+  # Homarr — dashboard
+  # ---------------------------------------------------------------------------
+  homarr:
+    image: ${HOMARR_IMAGE}
+    container_name: homarr
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - homarr_data:/appdata
+    networks:
+      - tunnel
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # ---------------------------------------------------------------------------
+  # Portainer — container management
+  # ---------------------------------------------------------------------------
+  portainer:
+    image: ${PORTAINER_IMAGE}
+    container_name: portainer
+    restart: unless-stopped
+    command: --admin-password-file /run/secrets/portainer_admin_password
+    secrets:
+      - portainer_admin_password
+    volumes:
+      - portainer_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - tunnel
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # ---------------------------------------------------------------------------
+  # Stirling PDF — PDF tools
+  # ---------------------------------------------------------------------------
+  stirling-pdf:
+    image: ${STIRLING_PDF_IMAGE}
+    container_name: stirling-pdf
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - DOCKER_ENABLE_SECURITY=true
+      - SECURITY_ENABLELOGIN=true
+      - SECURITY_INITIALLOGIN_USERNAME=${STIRLING_USERNAME}
+      - SECURITY_INITIALLOGIN_PASSWORD=${STIRLING_PASSWORD}
+    volumes:
+      - stirling_data:/usr/share/tessdata
+    networks:
+      - tunnel
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+      - /logs
+
+  # ---------------------------------------------------------------------------
+  # n8n — workflow automation
+  # ---------------------------------------------------------------------------
+  n8n:
+    image: ${N8N_IMAGE}
+    container_name: n8n
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_HOST=n8n.${DOMAIN}
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://n8n.${DOMAIN}/
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - tunnel
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+
+  # ---------------------------------------------------------------------------
+  # Grafana — visualization
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: ${GRAFANA_IMAGE}
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=${GRAFANA_PLUGINS}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./files/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - tunnel
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+
+  # ---------------------------------------------------------------------------
+  # Prometheus — metrics storage (internal only)
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: ${PROMETHEUS_IMAGE}
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    volumes:
+      - ./files/prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+
+  # ---------------------------------------------------------------------------
+  # Node Exporter — host metrics (internal only)
+  # ---------------------------------------------------------------------------
+  node-exporter:
+    image: ${NODE_EXPORTER_IMAGE}
+    container_name: node-exporter
+    restart: unless-stopped
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+
+  # ---------------------------------------------------------------------------
+  # Blackbox Exporter — ping/HTTP probes (internal only)
+  # ---------------------------------------------------------------------------
+  blackbox-exporter:
+    image: ${BLACKBOX_EXPORTER_IMAGE}
+    container_name: blackbox-exporter
+    restart: unless-stopped
+    command:
+      - --config.file=/config/blackbox.yml
+    volumes:
+      - ./files/prometheus/blackbox.yml:/config/blackbox.yml:ro
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_RAW
+    tmpfs:
+      - /tmp
+
+  # ---------------------------------------------------------------------------
+  # Speedtest Exporter — internet speed metrics (internal only)
+  # ---------------------------------------------------------------------------
+  speedtest-exporter:
+    image: ${SPEEDTEST_EXPORTER_IMAGE}
+    container_name: speedtest-exporter
+    restart: unless-stopped
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
