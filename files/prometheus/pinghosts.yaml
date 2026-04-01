@@ -1,0 +1,4 @@
+- targets:  # url;humanname;routing;switch;module
+    - de.pool.ntp.org;de.pool.ntp.org;external;internetbox;icmp
+    - 8.8.8.8;google-dns;external;internetbox;icmp
+    - 192.168.188.1;router;local;router;icmp
