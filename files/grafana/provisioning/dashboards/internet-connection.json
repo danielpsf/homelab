@@ -80,11 +80,11 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "speedtest_download_bits_per_second{}",
+          "expr": "max(speedtest_download_bits_per_second)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "",
+          "legendFormat": "Download",
           "refId": "A"
         }
       ],
@@ -151,11 +151,11 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "speedtest_upload_bits_per_second{}",
+          "expr": "max(speedtest_upload_bits_per_second)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "",
+          "legendFormat": "Upload",
           "refId": "A"
         }
       ],
@@ -223,12 +223,12 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "speedtest_ping_latency_milliseconds",
+          "expr": "max(speedtest_ping_latency_milliseconds)",
           "format": "time_series",
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "",
+          "legendFormat": "Ping",
           "refId": "A"
         }
       ],
@@ -395,7 +395,7 @@
       "pluginVersion": "12.3.0",
       "targets": [
         {
-          "expr": "speedtest_download_bits_per_second{}",
+          "expr": "max(speedtest_download_bits_per_second)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -403,7 +403,7 @@
           "refId": "A"
         },
         {
-          "expr": "speedtest_upload_bits_per_second{}",
+          "expr": "max(speedtest_upload_bits_per_second)",
           "hide": false,
           "interval": "",
           "legendFormat": "Upload",
