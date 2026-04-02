@@ -12,7 +12,6 @@ volumes:
     external: true
     name: homelab_grafana_data
   portainer_data:
-  homarr_data:
   n8n_data:
   stirling_data:
 
@@ -42,22 +41,33 @@ services:
       - /tmp
 
   # ---------------------------------------------------------------------------
-  # Homarr — dashboard
+  # Homepage — dashboard
   # ---------------------------------------------------------------------------
-  homarr:
-    image: ${HOMARR_IMAGE}
-    container_name: homarr
+  homepage:
+    image: ${HOMEPAGE_IMAGE}
+    container_name: homepage
     restart: unless-stopped
     environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=${TZ}
+      - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_ALLOWED_HOSTS}
+      - HOMEPAGE_VAR_DOMAIN=${HOMEPAGE_VAR_DOMAIN}
+      - HOMEPAGE_VAR_GRAFANA_PASSWORD=${HOMEPAGE_VAR_GRAFANA_PASSWORD}
     volumes:
-      - homarr_data:/appdata
+      - ./files/homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - tunnel
+      - monitoring
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
 
   # ---------------------------------------------------------------------------
   # Portainer — container management
@@ -96,13 +106,13 @@ services:
       - stirling_data:/usr/share/tessdata
     networks:
       - tunnel
-    security_opt:
-      - no-new-privileges:true
     cap_drop:
       - ALL
-    tmpfs:
-      - /tmp
-      - /logs
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
 
   # ---------------------------------------------------------------------------
   # n8n — workflow automation
@@ -117,10 +127,16 @@ services:
       - N8N_HOST=n8n.${DOMAIN}
       - N8N_PROTOCOL=https
       - WEBHOOK_URL=https://n8n.${DOMAIN}/
+      - N8N_METRICS=true
+      - N8N_METRICS_INCLUDE_DEFAULT_METRICS=true
+      - N8N_METRICS_INCLUDE_CACHE_METRICS=true
+      - N8N_METRICS_INCLUDE_MESSAGE_EVENT_BUS_METRICS=true
+      - N8N_METRICS_INCLUDE_WORKFLOW_ID_LABEL=true
     volumes:
       - n8n_data:/home/node/.n8n
     networks:
       - tunnel
+      - monitoring
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -217,6 +233,7 @@ services:
       - ./files/prometheus/blackbox.yml:/config/blackbox.yml:ro
     networks:
       - monitoring
+      - tunnel
     security_opt:
       - no-new-privileges:true
     read_only: true

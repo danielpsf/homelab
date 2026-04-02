@@ -1,0 +1,61 @@
+---
+- Applications:
+    - Grafana:
+        icon: grafana
+        href: "https://grafana.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Metrics visualization and dashboards
+        server: local
+        container: grafana
+        widget:
+          type: grafana
+          url: "http://grafana:3000"
+          username: admin
+          password: "{{HOMEPAGE_VAR_GRAFANA_PASSWORD}}"
+    - n8n:
+        icon: n8n
+        href: "https://n8n.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Workflow automation platform
+        server: local
+        container: n8n
+    - Portainer:
+        icon: portainer
+        href: "https://portainer.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Container management
+        server: local
+        container: portainer
+        widget:
+          type: portainer
+          url: "http://portainer:9000"
+          env: 2
+- Monitoring:
+    - Prometheus:
+        icon: prometheus
+        href: "http://prometheus:9090"
+        description: Metrics storage and alerting
+        server: local
+        container: prometheus
+        widget:
+          type: prometheus
+          url: "http://prometheus:9090"
+    - Node Exporter:
+        icon: prometheus
+        description: Host system metrics
+        server: local
+        container: node-exporter
+    - Speedtest:
+        icon: mdi-speedometer
+        description: Internet speed monitoring
+        server: local
+        container: speedtest-exporter
+- Tools:
+    - Stirling PDF:
+        icon: stirling-pdf
+        href: "https://pdf.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: PDF manipulation tools
+        server: local
+        container: stirling-pdf
+    - Cloudflared:
+        icon: cloudflare
+        description: Cloudflare Tunnel ingress
+        server: local
+        container: cloudflared

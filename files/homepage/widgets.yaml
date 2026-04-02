@@ -1,0 +1,10 @@
+---
+- type: datetime
+  text_size: xl
+  locale: en
+  format:
+    dateStyle: long
+    timeStyle: short
+- type: search
+  provider: google
+  target: _blank
