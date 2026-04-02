@@ -499,7 +499,7 @@
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "probe_success",
+          "expr": "probe_success{job=\"ping\"}",
           "format": "time_series",
           "instant": false,
           "interval": "",
