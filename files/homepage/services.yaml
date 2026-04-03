@@ -1,4 +1,16 @@
 ---
+- Management:
+    - Portainer:
+        icon: portainer
+        href: "https://portainer.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Container management
+        server: local
+        container: portainer
+        widget:
+          type: portainer
+          url: "http://portainer:9000"
+          env: 3
+          key: "{{HOMEPAGE_VAR_PORTAINER_KEY}}"
 - Applications:
     - Grafana:
         icon: grafana
@@ -17,33 +29,18 @@
         description: Workflow automation platform
         server: local
         container: n8n
-    - Portainer:
-        icon: portainer
-        href: "https://portainer.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: Container management
-        server: local
-        container: portainer
-        widget:
-          type: portainer
-          url: "http://portainer:9000"
-          env: 1
-          key: "{{HOMEPAGE_VAR_PORTAINER_KEY}}"
     - Wazuh:
         icon: wazuh
         href: "https://wazuh.{{HOMEPAGE_VAR_DOMAIN}}"
         description: Security monitoring (SIEM/XDR)
         server: local
         container: wazuh-dashboard
-- Monitoring:
-    - Prometheus:
-        icon: prometheus
-        href: "http://prometheus:9090"
-        description: Metrics storage and alerting
+    - Stirling PDF:
+        icon: stirling-pdf
+        href: "https://pdf.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: PDF manipulation tools
         server: local
-        container: prometheus
-        widget:
-          type: prometheus
-          url: "http://prometheus:9090"
+        container: stirling-pdf
 - Media:
     - Sonarr:
         icon: sonarr
@@ -69,6 +66,12 @@
           type: jellyfin
           url: "{{HOMEPAGE_VAR_JELLYFIN_URL}}"
           key: "{{HOMEPAGE_VAR_JELLYFIN_KEY}}"
+          enableBlocks: true
+          enableNowPlaying: true
+          enableUser: true
+          enableMediaControl: true
+          showEpisodeNumber: true
+          expandOneStreamToTwoRows: true
     - Deluge:
         icon: deluge
         href: "{{HOMEPAGE_VAR_DELUGE_URL}}"
@@ -77,13 +80,7 @@
           type: deluge
           url: "{{HOMEPAGE_VAR_DELUGE_URL}}"
           password: "{{HOMEPAGE_VAR_DELUGE_PASSWORD}}"
-- Tools:
-    - Stirling PDF:
-        icon: stirling-pdf
-        href: "https://pdf.{{HOMEPAGE_VAR_DOMAIN}}"
-        description: PDF manipulation tools
-        server: local
-        container: stirling-pdf
+- Network:
     - Cloudflared:
         icon: cloudflare
         description: Cloudflare Tunnel ingress
