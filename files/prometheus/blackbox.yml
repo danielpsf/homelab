@@ -8,6 +8,13 @@ modules:
     http:
       preferred_ip_protocol: "ip4"
       valid_status_codes: [200, 301, 302, 401, 403]
+  http_any_tls_skip:
+    prober: http
+    http:
+      preferred_ip_protocol: "ip4"
+      valid_status_codes: [200, 301, 302, 401, 403]
+      tls_config:
+        insecure_skip_verify: true
   http_post_2xx:
     prober: http
     http:

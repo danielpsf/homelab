@@ -3,6 +3,7 @@ name: homelab
 networks:
   tunnel:
   monitoring:
+  wazuh:
 
 volumes:
   prometheus_data:
@@ -14,6 +15,13 @@ volumes:
   portainer_data:
   n8n_data:
   stirling_data:
+  wazuh_api_configuration:
+  wazuh_etc:
+  wazuh_logs:
+  wazuh_queue:
+  wazuh_var_multigroups:
+  wazuh_indexer_data:
+  wazuh_dashboard_custom:
 
 secrets:
   portainer_admin_password:
@@ -137,6 +145,7 @@ services:
     networks:
       - tunnel
       - monitoring
+      - wazuh
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -234,6 +243,7 @@ services:
     networks:
       - monitoring
       - tunnel
+      - wazuh
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -267,3 +277,131 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Wazuh Indexer — OpenSearch-based alert/event storage
+  # ---------------------------------------------------------------------------
+  wazuh-indexer:
+    image: ${WAZUH_INDEXER_IMAGE}
+    container_name: wazuh-indexer
+    hostname: wazuh.indexer
+    restart: unless-stopped
+    environment:
+      - OPENSEARCH_JAVA_OPTS=-Xms${WAZUH_INDEXER_HEAP} -Xmx${WAZUH_INDEXER_HEAP}
+      - bootstrap.memory_lock=true
+      - network.host=0.0.0.0
+      - node.name=wazuh.indexer
+      - cluster.initial_cluster_manager_nodes=wazuh.indexer
+      - node.max_local_storage_nodes=1
+      - plugins.security.allow_default_init_securityindex=true
+      - NODES_DN=CN=wazuh.indexer,OU=Wazuh,O=Wazuh,L=California,C=US
+    volumes:
+      - wazuh_indexer_data:/var/lib/wazuh-indexer
+      - ./files/wazuh/indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - ./files/wazuh/certs/root-ca.pem:/usr/share/wazuh-indexer/certs/root-ca.pem:ro
+      - ./files/wazuh/certs/wazuh.indexer.pem:/usr/share/wazuh-indexer/certs/indexer.pem:ro
+      - ./files/wazuh/certs/wazuh.indexer-key.pem:/usr/share/wazuh-indexer/certs/indexer-key.pem:ro
+      - ./files/wazuh/certs/admin.pem:/usr/share/wazuh-indexer/certs/admin.pem:ro
+      - ./files/wazuh/certs/admin-key.pem:/usr/share/wazuh-indexer/certs/admin-key.pem:ro
+      - ./files/wazuh/indexer/internal_users.yml:/usr/share/wazuh-indexer/opensearch-security/internal_users.yml:ro
+    networks:
+      - wazuh
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fks https://localhost:9200/_plugins/_security/health | grep -q 'status.*UP'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # Wazuh Manager — SIEM analysis engine, receives agent data
+  # ---------------------------------------------------------------------------
+  wazuh-manager:
+    image: ${WAZUH_MANAGER_IMAGE}
+    container_name: wazuh-manager
+    hostname: wazuh.manager
+    restart: unless-stopped
+    depends_on:
+      wazuh-indexer:
+        condition: service_healthy
+    environment:
+      - INDEXER_URL=https://wazuh.indexer:9200
+      - INDEXER_USERNAME=${WAZUH_INDEXER_USERNAME}
+      - INDEXER_PASSWORD=${WAZUH_INDEXER_PASSWORD}
+      - FILEBEAT_SSL_VERIFICATION_MODE=full
+      - SSL_CERTIFICATE_AUTHORITIES=/etc/filebeat/certs/root-ca.pem
+      - SSL_CERTIFICATE=/etc/filebeat/certs/filebeat.pem
+      - SSL_KEY=/etc/filebeat/certs/filebeat-key.pem
+      - API_USERNAME=${WAZUH_API_USERNAME}
+      - API_PASSWORD=${WAZUH_API_PASSWORD}
+    volumes:
+      - wazuh_api_configuration:/var/ossec/api/configuration
+      - wazuh_etc:/var/ossec/etc
+      - wazuh_logs:/var/ossec/logs
+      - wazuh_queue:/var/ossec/queue
+      - wazuh_var_multigroups:/var/ossec/var/multigroups
+      - ./files/wazuh/ossec.conf:/wazuh-config-mount/etc/ossec.conf:ro
+      - ./files/wazuh/integrations/custom-n8n:/wazuh-config-mount/integrations/custom-n8n:ro
+      - ./files/wazuh/certs/root-ca.pem:/etc/filebeat/certs/root-ca.pem:ro
+      - ./files/wazuh/certs/wazuh.manager.pem:/etc/filebeat/certs/filebeat.pem:ro
+      - ./files/wazuh/certs/wazuh.manager-key.pem:/etc/filebeat/certs/filebeat-key.pem:ro
+      - ./files/wazuh/certs/root-ca.pem:/var/ossec/etc/certs/root-ca.pem:ro
+      - ./files/wazuh/certs/wazuh.manager.pem:/var/ossec/etc/certs/manager.pem:ro
+      - ./files/wazuh/certs/wazuh.manager-key.pem:/var/ossec/etc/certs/manager-key.pem:ro
+    networks:
+      - wazuh
+    ports:
+      - "1514:1514"
+      - "1515:1515"
+      - "55000:55000"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 655360
+        hard: 655360
+    healthcheck:
+      test: ["CMD-SHELL", "curl -ku ${WAZUH_API_USERNAME}:${WAZUH_API_PASSWORD} -s -f -X POST https://localhost:55000/security/user/authenticate?raw=true -o /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  # ---------------------------------------------------------------------------
+  # Wazuh Dashboard — web UI for security monitoring
+  # ---------------------------------------------------------------------------
+  wazuh-dashboard:
+    image: ${WAZUH_DASHBOARD_IMAGE}
+    container_name: wazuh-dashboard
+    hostname: wazuh.dashboard
+    restart: unless-stopped
+    depends_on:
+      wazuh-indexer:
+        condition: service_healthy
+      wazuh-manager:
+        condition: service_healthy
+    environment:
+      - OPENSEARCH_HOSTS=https://wazuh.indexer:9200
+      - WAZUH_API_URL=https://wazuh.manager
+      - API_USERNAME=${WAZUH_API_USERNAME}
+      - API_PASSWORD=${WAZUH_API_PASSWORD}
+      - DASHBOARD_USERNAME=${WAZUH_INDEXER_USERNAME}
+      - DASHBOARD_PASSWORD=${WAZUH_INDEXER_PASSWORD}
+    entrypoint: ["/custom-entrypoint.sh"]
+    volumes:
+      - ./files/wazuh/dashboard/entrypoint.sh:/custom-entrypoint.sh:ro
+      - wazuh_dashboard_custom:/usr/share/wazuh-dashboard/plugins/wazuh/public/assets/custom
+      - ./files/wazuh/certs/wazuh.dashboard.pem:/etc/wazuh-dashboard/certs/dashboard.pem:ro
+      - ./files/wazuh/certs/wazuh.dashboard-key.pem:/etc/wazuh-dashboard/certs/dashboard-key.pem:ro
+      - ./files/wazuh/certs/root-ca.pem:/etc/wazuh-dashboard/certs/root-ca.pem:ro
+    networks:
+      - tunnel
+      - wazuh

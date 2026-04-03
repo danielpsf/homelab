@@ -53,6 +53,29 @@ scrape_configs:
         target_label: service
         replacement: $1
 
+  # Wazuh dashboard probe (self-signed TLS — separate module)
+  - job_name: 'service-health-tls'
+    metrics_path: /probe
+    scrape_interval: 30s
+    params:
+      module: [http_any_tls_skip]
+    static_configs:
+      - targets:
+          - https://wazuh-dashboard:443
+        labels:
+          probe_group: homelab
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+      - source_labels: [__param_target]
+        regex: 'https?://([^:]+):.*'
+        target_label: service
+        replacement: $1
+
   # External connectivity probes
   - job_name: 'ping'
     metrics_path: /probe

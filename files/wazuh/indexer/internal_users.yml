@@ -1,0 +1,19 @@
+---
+# Wazuh Indexer internal user database
+# Password hashes generated with opensearch-security hash.sh tool
+
+_meta:
+  type: "internalusers"
+  config_version: 2
+
+admin:
+  hash: "$2y$12$RClk34ZvNxA07La.PzCxCews2BqvJfTQl7ZNpVFv/txL885uq55e6"
+  reserved: true
+  backend_roles:
+    - "admin"
+  description: "Admin user"
+
+kibanaserver:
+  hash: "$2y$12$2v3kzmEkVEoTgjX3RnhDsuwv0lyro28PJe1q8LqgLHIf4G2W6inci"
+  reserved: true
+  description: "Wazuh Dashboard user"

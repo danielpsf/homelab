@@ -5,6 +5,7 @@ locals {
     pdf       = { subdomain = "pdf.",       service_name = "Stirling PDF" }
     n8n       = { subdomain = "n8n.",       service_name = "n8n" }
     portainer = { subdomain = "portainer.", service_name = "Portainer" }
+    wazuh     = { subdomain = "wazuh.",     service_name = "Wazuh" }
   }
 }
 

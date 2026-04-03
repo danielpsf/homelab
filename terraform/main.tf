@@ -36,6 +36,13 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab" {
         service  = "http://portainer:9000"
       },
       {
+        hostname = "wazuh.${var.domain}"
+        service  = "https://wazuh-dashboard:443"
+        origin_request = {
+          no_tls_verify = true
+        }
+      },
+      {
         # catch-all rule (required by Cloudflare)
         service = "http_status:404"
       }

@@ -27,6 +27,12 @@
           type: portainer
           url: "http://portainer:9000"
           env: 2
+    - Wazuh:
+        icon: wazuh
+        href: "https://wazuh.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Security monitoring (SIEM/XDR)
+        server: local
+        container: wazuh-dashboard
 - Monitoring:
     - Prometheus:
         icon: prometheus
