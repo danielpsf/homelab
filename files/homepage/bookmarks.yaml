@@ -1,10 +1,6 @@
 ---
 - Developer:
     - GitHub:
-        icon: github
-        href: https://github.com/danielpsf
-        description: Source code repositories
-    - Docker Hub:
-        icon: docker
-        href: https://hub.docker.com
-        description: Container image registry
+        - icon: github
+          href: https://github.com/danielpsf
+          description: Source code repositories

@@ -9,6 +9,12 @@ layout:
   Monitoring:
     style: row
     columns: 3
+  Media:
+    style: row
+    columns: 4
   Tools:
+    style: row
+    columns: 2
+  Developer:
     style: row
     columns: 2

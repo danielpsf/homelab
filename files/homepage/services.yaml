@@ -26,7 +26,8 @@
         widget:
           type: portainer
           url: "http://portainer:9000"
-          env: 2
+          env: 1
+          key: "{{HOMEPAGE_VAR_PORTAINER_KEY}}"
     - Wazuh:
         icon: wazuh
         href: "https://wazuh.{{HOMEPAGE_VAR_DOMAIN}}"
@@ -43,16 +44,39 @@
         widget:
           type: prometheus
           url: "http://prometheus:9090"
-    - Node Exporter:
-        icon: prometheus
-        description: Host system metrics
-        server: local
-        container: node-exporter
-    - Speedtest:
-        icon: mdi-speedometer
-        description: Internet speed monitoring
-        server: local
-        container: speedtest-exporter
+- Media:
+    - Sonarr:
+        icon: sonarr
+        href: "{{HOMEPAGE_VAR_SONARR_URL}}"
+        description: TV show management
+        widget:
+          type: sonarr
+          url: "{{HOMEPAGE_VAR_SONARR_URL}}"
+          key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
+    - Radarr:
+        icon: radarr
+        href: "{{HOMEPAGE_VAR_RADARR_URL}}"
+        description: Movie management
+        widget:
+          type: radarr
+          url: "{{HOMEPAGE_VAR_RADARR_URL}}"
+          key: "{{HOMEPAGE_VAR_RADARR_KEY}}"
+    - Jellyfin:
+        icon: jellyfin
+        href: "{{HOMEPAGE_VAR_JELLYFIN_URL}}"
+        description: Media streaming
+        widget:
+          type: jellyfin
+          url: "{{HOMEPAGE_VAR_JELLYFIN_URL}}"
+          key: "{{HOMEPAGE_VAR_JELLYFIN_KEY}}"
+    - Deluge:
+        icon: deluge
+        href: "{{HOMEPAGE_VAR_DELUGE_URL}}"
+        description: Torrent client
+        widget:
+          type: deluge
+          url: "{{HOMEPAGE_VAR_DELUGE_URL}}"
+          password: "{{HOMEPAGE_VAR_DELUGE_PASSWORD}}"
 - Tools:
     - Stirling PDF:
         icon: stirling-pdf
@@ -65,3 +89,8 @@
         description: Cloudflare Tunnel ingress
         server: local
         container: cloudflared
+        widget:
+          type: cloudflared
+          accountid: "{{HOMEPAGE_VAR_CF_ACCOUNT_ID}}"
+          tunnelid: "{{HOMEPAGE_VAR_CF_TUNNEL_ID}}"
+          key: "{{HOMEPAGE_VAR_CF_API_TOKEN}}"
