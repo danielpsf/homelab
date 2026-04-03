@@ -1,0 +1,167 @@
+{
+  "name": "Wazuh AI-Triaged Alert Notification",
+  "nodes": [
+    {
+      "id": "webhook-1",
+      "name": "Wazuh Alert Webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {},
+        "path": "wazuh-alerts"
+      },
+      "position": [200, 400],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1
+    },
+    {
+      "id": "gemini-1",
+      "name": "Gemini AI Triage",
+      "parameters": {
+        "builtInTools": {},
+        "jsonOutput": true,
+        "messages": {
+          "values": [
+            {
+              "content": "={{ 'Analyze the following Wazuh SIEM/XDR security alert from my homelab server and determine if it requires my immediate attention or action.\\n\\nAlert JSON:\\n' + JSON.stringify($json.body, null, 2) }}",
+              "role": "user"
+            }
+          ]
+        },
+        "modelId": {
+          "mode": "id",
+          "value": "models/gemini-2.5-flash"
+        },
+        "operation": "message",
+        "options": {
+          "maxOutputTokens": 2048,
+          "systemMessage": "You are a cybersecurity analyst assistant for a homelab environment. Your job is to triage Wazuh SIEM/XDR alerts and determine if they are truly actionable threats that require the homelab owner's attention.\n\nYou will receive a Wazuh alert JSON payload. Analyze it and respond with ONLY a JSON object (no markdown, no code fences) with these fields:\n\n- actionable (boolean): true if this alert represents a real security threat requiring human intervention, false if it's noise/informational/routine\n- severity (string): \"critical\", \"high\", \"medium\", or \"low\"\n- summary (string): A concise 1-2 sentence human-readable summary of what happened\n- analysis (string): A brief explanation of why this is or isn't actionable, including relevant context about the type of attack/event\n- recommendation (string): What action the homelab owner should take (if actionable) or why they can safely ignore it\n\nConsider these as NOT actionable (noise):\n- Routine authentication failures from known scanners/bots\n- Standard system service restarts or reloads\n- Informational syslog messages with no security impact\n- Repeated low-level file integrity monitoring on non-critical temp/cache files\n- Generic SSH brute-force from random IPs (these are constant internet noise)\n\nConsider these as ACTIONABLE:\n- Successful unauthorized access or privilege escalation\n- Rootkit detection or suspicious binary modifications\n- Critical file integrity changes on system binaries or config files\n- Successful exploitation attempts\n- Unusual outbound connections suggesting data exfiltration\n- Multiple failed logins from internal/trusted IPs (could indicate compromised host)\n- Any alert level 12 or above should generally be considered actionable\n- New user accounts created unexpectedly\n- Suspicious process execution or shell commands",
+          "temperature": 0.2
+        },
+        "resource": "text",
+        "simplify": true
+      },
+      "position": [460, 400],
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_GEMINI_CREDENTIAL_ID",
+          "name": "Google Gemini"
+        }
+      }
+    },
+    {
+      "id": "code-1",
+      "name": "Parse AI Response",
+      "parameters": {
+        "jsCode": "// Extract the text from Gemini's response and parse it as JSON\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  let text = '';\n  \n  // Handle both simplified and raw Gemini output formats\n  if (typeof item.json.text === 'string') {\n    text = item.json.text;\n  } else if (item.json.content && item.json.content.parts) {\n    text = item.json.content.parts.map(p => p.text).join('');\n  } else if (typeof item.json === 'string') {\n    text = item.json;\n  } else {\n    // Try to find text in any nested structure\n    text = JSON.stringify(item.json);\n  }\n  \n  // Clean up: remove markdown code fences if present\n  text = text.replace(/```json\\s*/g, '').replace(/```\\s*/g, '').trim();\n  \n  let parsed;\n  try {\n    parsed = JSON.parse(text);\n  } catch (e) {\n    // If parsing fails, default to actionable to be safe\n    parsed = {\n      actionable: true,\n      severity: 'medium',\n      summary: 'AI analysis could not be parsed - forwarding alert for manual review',\n      analysis: 'The AI response could not be parsed as JSON. Raw response: ' + text.substring(0, 500),\n      recommendation: 'Review this alert manually in the Wazuh dashboard.'\n    };\n  }\n  \n  results.push({ json: parsed });\n}\n\nreturn results;",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      },
+      "position": [720, 400],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "if-1",
+      "name": "Is Actionable?",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "condition-actionable",
+              "leftValue": "={{ $json.actionable }}",
+              "operator": {
+                "operation": "true",
+                "singleValue": true,
+                "type": "boolean"
+              }
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          }
+        },
+        "options": {}
+      },
+      "position": [960, 400],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2
+    },
+    {
+      "id": "email-1",
+      "name": "Send Alert Email",
+      "parameters": {
+        "emailType": "html",
+        "fromEmail": "your-sender@example.com",
+        "html": "={{ (function() {\n  var body = $('Wazuh Alert Webhook').first().json.body;\n  var ai = $json;\n  var level = body && body.rule ? body.rule.level : 'N/A';\n  var ruleId = body && body.rule ? body.rule.id : 'N/A';\n  var ruleDesc = body && body.rule ? body.rule.description : 'N/A';\n  var groups = body && body.rule && body.rule.groups ? body.rule.groups.join(', ') : 'N/A';\n  var agentName = body && body.agent ? body.agent.name : 'N/A';\n  var agentId = body && body.agent ? body.agent.id : 'N/A';\n  var timestamp = body ? body.timestamp : 'N/A';\n  var fullLog = body ? (body.full_log ? body.full_log : 'N/A') : 'N/A';\n  var location = body ? (body.location ? body.location : 'N/A') : 'N/A';\n  var decoder = body && body.decoder ? body.decoder.name : 'N/A';\n  var sevColor = ai.severity === 'critical' ? '#dc2626' : (ai.severity === 'high' ? '#ea580c' : (ai.severity === 'medium' ? '#d97706' : '#2563eb'));\n  var sevBg = ai.severity === 'critical' ? '#fef2f2' : (ai.severity === 'high' ? '#fff7ed' : (ai.severity === 'medium' ? '#fffbeb' : '#eff6ff'));\n  return '<div style=\"font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; max-width: 640px; margin: 0 auto; background: #f8fafc; padding: 0;\">'\n    + '<div style=\"background: ' + sevColor + '; padding: 24px 32px; border-radius: 8px 8px 0 0;\">'\n    + '<h1 style=\"color: #fff; margin: 0; font-size: 20px; font-weight: 600;\">&#x1f6e1;&#xfe0f; Wazuh Security Alert</h1>'\n    + '<p style=\"color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 14px;\">AI-triaged notification from your homelab</p>'\n    + '</div>'\n    + '<div style=\"background: #fff; padding: 24px 32px; border: 1px solid #e2e8f0; border-top: none;\">'\n    + '<div style=\"background: ' + sevBg + '; border-left: 4px solid ' + sevColor + '; padding: 16px; border-radius: 4px; margin-bottom: 20px;\">'\n    + '<div style=\"font-size: 12px; text-transform: uppercase; font-weight: 700; color: ' + sevColor + '; letter-spacing: 0.5px;\">Severity: ' + (ai.severity ? ai.severity.toUpperCase() : 'UNKNOWN') + '</div>'\n    + '<div style=\"font-size: 16px; font-weight: 600; color: #1e293b; margin-top: 4px;\">' + (ai.summary ? ai.summary : '') + '</div>'\n    + '</div>'\n    + '<h2 style=\"font-size: 14px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin: 20px 0 12px; letter-spacing: 0.5px;\">AI Analysis</h2>'\n    + '<p style=\"color: #334155; font-size: 14px; line-height: 1.6; margin: 0 0 16px;\">' + (ai.analysis ? ai.analysis : '') + '</p>'\n    + '<div style=\"background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px;\">'\n    + '<div style=\"font-size: 12px; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;\">&#x2705; Recommendation</div>'\n    + '<p style=\"color: #166534; font-size: 14px; margin: 4px 0 0; line-height: 1.5;\">' + (ai.recommendation ? ai.recommendation : '') + '</p>'\n    + '</div>'\n    + '<h2 style=\"font-size: 14px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin: 20px 0 12px; letter-spacing: 0.5px;\">Alert Details</h2>'\n    + '<table style=\"width: 100%; border-collapse: collapse; font-size: 13px;\">'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; width: 130px; border: 1px solid #e2e8f0;\">Rule ID</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + ruleId + '</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Rule Level</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + level + ' / 15</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Description</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + ruleDesc + '</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Groups</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + groups + '</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Agent</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + agentName + ' (ID: ' + agentId + ')</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Timestamp</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + timestamp + '</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Location</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + location + '</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Decoder</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + decoder + '</td></tr>'\n    + '</table>'\n    + '<h2 style=\"font-size: 14px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin: 20px 0 12px; letter-spacing: 0.5px;\">Full Log</h2>'\n    + '<pre style=\"background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 6px; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-break: break-all;\">' + fullLog + '</pre>'\n    + '</div>'\n    + '<div style=\"padding: 16px 32px; text-align: center; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; background: #f8fafc;\">'\n    + '<p style=\"color: #94a3b8; font-size: 12px; margin: 0;\">Wazuh SIEM/XDR &bull; AI-triaged by Gemini &bull; Homelab Security</p>'\n    + '</div>'\n    + '</div>';\n})() }}",
+        "options": {},
+        "subject": "={{ '[Wazuh ' + ($json.severity ? $json.severity.toUpperCase() : 'ALERT') + '] ' + ($json.summary ? $json.summary : 'Security Alert') }}",
+        "toEmail": "your-recipient@example.com"
+      },
+      "position": [1220, 300],
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "Gmail SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Wazuh Alert Webhook": {
+      "main": [
+        [
+          {
+            "node": "Gemini AI Triage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini AI Triage": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Is Actionable?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Actionable?": {
+      "main": [
+        [
+          {
+            "node": "Send Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
