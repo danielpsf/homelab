@@ -1,82 +1,107 @@
 {
-  "name": "Wazuh AI-Triaged Alert Notification",
+  "name": "Wazuh Alert Pipeline",
   "nodes": [
     {
-      "id": "webhook-1",
+      "id": "webhook-trigger",
       "name": "Wazuh Alert Webhook",
       "parameters": {
         "httpMethod": "POST",
         "options": {},
         "path": "wazuh-alerts"
       },
-      "position": [200, 400],
+      "position": [200, 200],
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1
     },
     {
-      "id": "gemini-1",
-      "name": "Gemini AI Triage",
+      "id": "extract-fields",
+      "name": "Extract Alert Fields",
       "parameters": {
-        "builtInTools": {},
-        "jsonOutput": true,
-        "messages": {
-          "values": [
-            {
-              "content": "={{ 'Analyze the following Wazuh SIEM/XDR security alert from my homelab server and determine if it requires my immediate attention or action.\\n\\nAlert JSON:\\n' + JSON.stringify($json.body, null, 2) }}",
-              "role": "user"
-            }
-          ]
-        },
-        "modelId": {
-          "mode": "id",
-          "value": "models/gemini-2.5-flash"
-        },
-        "operation": "message",
-        "options": {
-          "maxOutputTokens": 2048,
-          "systemMessage": "You are a cybersecurity analyst assistant for a homelab environment. Your job is to triage Wazuh SIEM/XDR alerts and determine if they are truly actionable threats that require the homelab owner's attention.\n\nYou will receive a Wazuh alert JSON payload. Analyze it and respond with ONLY a JSON object (no markdown, no code fences) with these fields:\n\n- actionable (boolean): true if this alert represents a real security threat requiring human intervention, false if it's noise/informational/routine\n- severity (string): \"critical\", \"high\", \"medium\", or \"low\"\n- summary (string): A concise 1-2 sentence human-readable summary of what happened\n- analysis (string): A brief explanation of why this is or isn't actionable, including relevant context about the type of attack/event\n- recommendation (string): What action the homelab owner should take (if actionable) or why they can safely ignore it\n\nConsider these as NOT actionable (noise):\n- Routine authentication failures from known scanners/bots\n- Standard system service restarts or reloads\n- Informational syslog messages with no security impact\n- Repeated low-level file integrity monitoring on non-critical temp/cache files\n- Generic SSH brute-force from random IPs (these are constant internet noise)\n\nConsider these as ACTIONABLE:\n- Successful unauthorized access or privilege escalation\n- Rootkit detection or suspicious binary modifications\n- Critical file integrity changes on system binaries or config files\n- Successful exploitation attempts\n- Unusual outbound connections suggesting data exfiltration\n- Multiple failed logins from internal/trusted IPs (could indicate compromised host)\n- Any alert level 12 or above should generally be considered actionable\n- New user accounts created unexpectedly\n- Suspicious process execution or shell commands",
-          "temperature": 0.2
-        },
-        "resource": "text",
-        "simplify": true
-      },
-      "position": [460, 400],
-      "type": "@n8n/n8n-nodes-langchain.googleGemini",
-      "typeVersion": 1.1,
-      "credentials": {
-        "googlePalmApi": {
-          "id": "YOUR_GEMINI_CREDENTIAL_ID",
-          "name": "Google Gemini"
-        }
-      }
-    },
-    {
-      "id": "code-1",
-      "name": "Parse AI Response",
-      "parameters": {
-        "jsCode": "// Extract the text from Gemini's response and parse it as JSON\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  let text = '';\n  \n  // Handle both simplified and raw Gemini output formats\n  if (typeof item.json.text === 'string') {\n    text = item.json.text;\n  } else if (item.json.content && item.json.content.parts) {\n    text = item.json.content.parts.map(p => p.text).join('');\n  } else if (typeof item.json === 'string') {\n    text = item.json;\n  } else {\n    // Try to find text in any nested structure\n    text = JSON.stringify(item.json);\n  }\n  \n  // Clean up: remove markdown code fences if present\n  text = text.replace(/```json\\s*/g, '').replace(/```\\s*/g, '').trim();\n  \n  let parsed;\n  try {\n    parsed = JSON.parse(text);\n  } catch (e) {\n    // If parsing fails, default to actionable to be safe\n    parsed = {\n      actionable: true,\n      severity: 'medium',\n      summary: 'AI analysis could not be parsed - forwarding alert for manual review',\n      analysis: 'The AI response could not be parsed as JSON. Raw response: ' + text.substring(0, 500),\n      recommendation: 'Review this alert manually in the Wazuh dashboard.'\n    };\n  }\n  \n  results.push({ json: parsed });\n}\n\nreturn results;",
+        "jsCode": "const body = $json.body || $json;\nconst rule = body.rule || {};\nconst agent = body.agent || {};\nconst now = new Date().toISOString();\n\nreturn [{\n  json: {\n    alert_id: body.id || `alert-${Date.now()}`,\n    rule_id: String(rule.id || 'unknown'),\n    rule_level: rule.level || 0,\n    rule_description: rule.description || 'No description',\n    agent_name: agent.name || 'unknown',\n    timestamp: body.timestamp || now,\n    full_log: body.full_log || 'N/A',\n    location: body.location || 'N/A',\n    decoder: body.decoder ? body.decoder.name : 'N/A',\n    rule_groups: rule.groups ? rule.groups.join(', ') : 'N/A',\n    alert_json: JSON.stringify(body),\n    processed: false,\n    received_at: now\n  }\n}];",
         "language": "javaScript",
         "mode": "runOnceForAllItems"
       },
-      "position": [720, 400],
+      "position": [460, 200],
       "type": "n8n-nodes-base.code",
       "typeVersion": 2
     },
     {
-      "id": "if-1",
-      "name": "Is Actionable?",
+      "id": "store-alert",
+      "name": "Store in Data Table",
+      "parameters": {
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": null
+        },
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "operation": "insert",
+        "resource": "row"
+      },
+      "position": [720, 200],
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "schedule-trigger",
+      "name": "Hourly Digest Trigger",
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "position": [200, 600],
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3
+    },
+    {
+      "id": "get-alerts",
+      "name": "Get Unprocessed Alerts",
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "condition": "isFalse",
+              "keyName": "processed"
+            }
+          ]
+        },
+        "operation": "get",
+        "resource": "row",
+        "returnAll": true
+      },
+      "position": [460, 600],
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "check-alerts",
+      "name": "Has Alerts?",
       "parameters": {
         "conditions": {
           "combinator": "and",
           "conditions": [
             {
-              "id": "condition-actionable",
-              "leftValue": "={{ $json.actionable }}",
+              "id": "check-count",
+              "leftValue": "={{ $input.all().length }}",
               "operator": {
-                "operation": "true",
-                "singleValue": true,
-                "type": "boolean"
-              }
+                "operation": "gt",
+                "type": "number"
+              },
+              "rightValue": 0
             }
           ],
           "options": {
@@ -88,22 +113,89 @@
         },
         "options": {}
       },
-      "position": [960, 400],
+      "position": [720, 600],
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2
+      "typeVersion": 2.3
     },
     {
-      "id": "email-1",
-      "name": "Send Alert Email",
+      "id": "prepare-prompt",
+      "name": "Prepare Gemini Prompt",
       "parameters": {
-        "emailType": "html",
+        "jsCode": "const alerts = $input.all().map(item => item.json);\n\nconst alertSummaries = alerts.map((a, i) => {\n  return `### Alert ${i + 1}\n- **Alert ID**: ${a.alert_id}\n- **Rule ID**: ${a.rule_id} (Level ${a.rule_level})\n- **Description**: ${a.rule_description}\n- **Agent**: ${a.agent_name}\n- **Timestamp**: ${a.timestamp}\n- **Location**: ${a.location}\n- **Decoder**: ${a.decoder}\n- **Groups**: ${a.rule_groups}\n- **Log**: ${a.full_log}`;\n}).join('\\n\\n');\n\nconst prompt = `You are a senior cybersecurity analyst reviewing Wazuh SIEM alerts from a homelab environment. The homelab runs on a single Ubuntu server (\"my-server\") with Docker containers for various services.\n\nAnalyze the following ${alerts.length} alert(s) collected in the last hour. For each alert, provide:\n1. **Severity Assessment** (Critical / High / Medium / Low / Informational)\n2. **MITRE ATT&CK Mapping** (technique ID and name if applicable)\n3. **Analysis** (what happened, is it expected in a homelab?)\n4. **Recommended Action** (investigate, monitor, or safe to ignore)\n\nAfter individual assessments, provide:\n- **Executive Summary**: 2-3 sentence overview\n- **Overall Threat Level**: Critical / High / Medium / Low / None\n- **Top Priority Actions**: Numbered list of what to do first\n\nIMPORTANT: Be practical. This is a homelab, not an enterprise. Flag truly suspicious activity but don't over-alarm on routine system events.\n\nReturn your response as valid JSON with this structure:\n{\n  \"executive_summary\": \"string\",\n  \"overall_threat_level\": \"string\",\n  \"priority_actions\": [\"string\"],\n  \"alerts\": [\n    {\n      \"alert_id\": \"string\",\n      \"severity\": \"string\",\n      \"mitre_attack\": \"string or null\",\n      \"analysis\": \"string\",\n      \"recommended_action\": \"string\"\n    }\n  ]\n}\n\n---\n\n${alertSummaries}`;\n\nconst alertIds = alerts.map(a => a.id || a.alert_id);\nconst alertCount = alerts.length;\nconst maxLevel = Math.max(...alerts.map(a => a.rule_level || 0));\n\nreturn [{\n  json: {\n    chatInput: prompt,\n    alertIds: alertIds,\n    alertCount: alertCount,\n    maxLevel: maxLevel,\n    rawAlerts: alerts\n  }\n}];",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      },
+      "position": [980, 500],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "gemini-model",
+      "name": "Gemini",
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "position": [1240, 720],
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_GEMINI_CREDENTIAL_ID",
+          "name": "Google Gemini"
+        }
+      }
+    },
+    {
+      "id": "llm-chain",
+      "name": "AI Analysis",
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}"
+      },
+      "position": [1240, 500],
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9
+    },
+    {
+      "id": "parse-response",
+      "name": "Parse AI Response",
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst prevData = $('Prepare Gemini Prompt').first().json;\n\nlet rawText = input.text || input.output || JSON.stringify(input);\n\nlet analysis;\ntry {\n  const jsonMatch = rawText.match(/```(?:json)?\\s*([\\s\\S]*?)```/);\n  const jsonStr = jsonMatch ? jsonMatch[1].trim() : rawText.trim();\n  analysis = JSON.parse(jsonStr);\n} catch (e) {\n  analysis = {\n    executive_summary: 'AI analysis returned non-JSON response. Raw output included below.',\n    overall_threat_level: 'Unknown',\n    priority_actions: ['Review raw AI output manually'],\n    alerts: [],\n    raw_output: rawText\n  };\n}\n\nreturn [{\n  json: {\n    analysis: analysis,\n    alertIds: prevData.alertIds,\n    alertCount: prevData.alertCount,\n    maxLevel: prevData.maxLevel,\n    rawAlerts: prevData.rawAlerts\n  }\n}];",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      },
+      "position": [1500, 500],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "build-email",
+      "name": "Build Email & Markdown",
+      "parameters": {
+        "jsCode": "const { analysis, alertCount, maxLevel, rawAlerts } = $input.first().json;\nconst now = new Date().toISOString().replace('T', ' ').substring(0, 19);\n\nconst threatColors = {\n  'Critical': '#dc3545', 'High': '#fd7e14', 'Medium': '#ffc107',\n  'Low': '#28a745', 'None': '#6c757d', 'Informational': '#17a2b8', 'Unknown': '#6c757d'\n};\nconst threatColor = threatColors[analysis.overall_threat_level] || '#6c757d';\n\nlet html = `<!DOCTYPE html>\n<html>\n<head><meta charset=\"utf-8\"><style>\n  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }\n  .container { max-width: 700px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }\n  .header { background: ${threatColor}; color: #fff; padding: 20px 24px; }\n  .header h1 { margin: 0; font-size: 20px; }\n  .header .meta { opacity: 0.9; font-size: 13px; margin-top: 4px; }\n  .body { padding: 24px; }\n  .summary { background: #f8f9fa; border-left: 4px solid ${threatColor}; padding: 12px 16px; margin-bottom: 20px; border-radius: 0 4px 4px 0; }\n  .alert-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 14px; margin-bottom: 12px; }\n  .alert-card h3 { margin: 0 0 8px 0; font-size: 14px; }\n  .severity { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; }\n  .severity-critical { background: #dc3545; } .severity-high { background: #fd7e14; }\n  .severity-medium { background: #ffc107; color: #333; } .severity-low { background: #28a745; }\n  .severity-informational { background: #17a2b8; }\n  .actions { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 14px; margin-top: 16px; }\n  .actions h3 { margin: 0 0 8px 0; font-size: 14px; color: #856404; }\n  .actions ol { margin: 0; padding-left: 20px; }\n  .footer { padding: 16px 24px; background: #f8f9fa; font-size: 12px; color: #666; border-top: 1px solid #e0e0e0; }\n</style></head>\n<body>\n<div class=\"container\">\n  <div class=\"header\">\n    <h1>Wazuh Security Digest</h1>\n    <div class=\"meta\">${alertCount} alert(s) | Max Level: ${maxLevel} | ${now} UTC</div>\n  </div>\n  <div class=\"body\">\n    <div class=\"summary\">\n      <strong>Threat Level: ${analysis.overall_threat_level}</strong><br/>\n      ${analysis.executive_summary}\n    </div>`;\n\nif (analysis.alerts && analysis.alerts.length > 0) {\n  analysis.alerts.forEach((a, i) => {\n    const sevClass = 'severity-' + (a.severity || 'low').toLowerCase();\n    const matchingRaw = rawAlerts[i] || {};\n    html += `\\n    <div class=\"alert-card\">\\n      <h3>${matchingRaw.rule_description || a.alert_id || 'Alert ' + (i+1)} <span class=\"severity ${sevClass}\">${a.severity}</span></h3>\\n      <p style=\"margin:4px 0;font-size:13px;\"><strong>Rule:</strong> ${matchingRaw.rule_id || 'N/A'} | <strong>Agent:</strong> ${matchingRaw.agent_name || 'N/A'} | <strong>MITRE:</strong> ${a.mitre_attack || 'N/A'}</p>\\n      <p style=\"margin:4px 0;font-size:13px;\">${a.analysis}</p>\\n      <p style=\"margin:4px 0;font-size:12px;color:#666;\"><strong>Action:</strong> ${a.recommended_action}</p>\\n    </div>`;\n  });\n}\n\nif (analysis.priority_actions && analysis.priority_actions.length > 0) {\n  html += `\\n    <div class=\"actions\">\\n      <h3>Priority Actions</h3>\\n      <ol>`;\n  analysis.priority_actions.forEach(action => {\n    html += `<li style=\"margin-bottom:4px;font-size:13px;\">${action}</li>`;\n  });\n  html += `</ol></div>`;\n}\n\nhtml += `\\n  </div>\\n  <div class=\"footer\">\\n    Generated by n8n Wazuh Alert Pipeline | Homelab Security Monitoring\\n  </div>\\n</div>\\n</body></html>`;\n\nlet md = `# Wazuh Security Digest\\n`;\nmd += `**Date:** ${now} UTC\\n`;\nmd += `**Alerts:** ${alertCount} | **Max Level:** ${maxLevel} | **Threat Level:** ${analysis.overall_threat_level}\\n\\n`;\nmd += `## Executive Summary\\n${analysis.executive_summary}\\n\\n`;\n\nif (analysis.alerts && analysis.alerts.length > 0) {\n  md += `## Alert Details\\n\\n`;\n  analysis.alerts.forEach((a, i) => {\n    const matchingRaw = rawAlerts[i] || {};\n    md += `### ${i+1}. ${matchingRaw.rule_description || a.alert_id || 'Alert'}\\n`;\n    md += `- **Severity:** ${a.severity}\\n`;\n    md += `- **Rule ID:** ${matchingRaw.rule_id || 'N/A'} (Level ${matchingRaw.rule_level || 'N/A'})\\n`;\n    md += `- **Agent:** ${matchingRaw.agent_name || 'N/A'}\\n`;\n    md += `- **MITRE ATT&CK:** ${a.mitre_attack || 'N/A'}\\n`;\n    md += `- **Timestamp:** ${matchingRaw.timestamp || 'N/A'}\\n`;\n    md += `- **Analysis:** ${a.analysis}\\n`;\n    md += `- **Action:** ${a.recommended_action}\\n`;\n    md += `- **Log:** \\`${matchingRaw.full_log || 'N/A'}\\`\\n\\n`;\n  });\n}\n\nif (analysis.priority_actions && analysis.priority_actions.length > 0) {\n  md += `## Priority Actions\\n`;\n  analysis.priority_actions.forEach((action, i) => { md += `${i+1}. ${action}\\n`; });\n  md += `\\n`;\n}\nmd += `---\\n*Generated by n8n Wazuh Alert Pipeline*\\n`;\n\nconst threatEmoji = { 'Critical': '\\uD83D\\uDD34', 'High': '\\uD83D\\uDFE0', 'Medium': '\\uD83D\\uDFE1', 'Low': '\\uD83D\\uDFE2', 'None': '\\u26AA', 'Unknown': '\\u2753' };\nconst emoji = threatEmoji[analysis.overall_threat_level] || '\\uD83D\\uDEE1\\uFE0F';\nlet gotifyMsg = `${emoji} ${analysis.overall_threat_level}: ${alertCount} alert(s)\\n\\n${analysis.executive_summary}`;\nif (analysis.priority_actions && analysis.priority_actions.length > 0) {\n  gotifyMsg += `\\n\\nActions:\\n` + analysis.priority_actions.map((a, i) => `${i+1}. ${a}`).join('\\n');\n}\n\nconst gotifyPriority = { 'Critical': 9, 'High': 7, 'Medium': 5, 'Low': 3, 'None': 1, 'Unknown': 5 };\nconst mdBuffer = Buffer.from(md, 'utf-8');\n\nreturn [{\n  json: {\n    subject: `${emoji} Wazuh Digest: ${analysis.overall_threat_level} - ${alertCount} alert(s)`,\n    htmlBody: html,\n    gotifyTitle: `Wazuh: ${analysis.overall_threat_level} (${alertCount} alerts)`,\n    gotifyMessage: gotifyMsg,\n    gotifyPriority: gotifyPriority[analysis.overall_threat_level] || 5,\n    alertCount: alertCount,\n    analysis: analysis\n  },\n  binary: {\n    report: {\n      data: mdBuffer.toString('base64'),\n      mimeType: 'text/markdown',\n      fileName: `wazuh-digest-${now.replace(/[: ]/g, '-')}.md`,\n      fileExtension: 'md'\n    }\n  }\n}];",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      },
+      "position": [1760, 500],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "send-email",
+      "name": "Send Digest Email",
+      "parameters": {
         "fromEmail": "your-sender@example.com",
-        "html": "={{ (function() {\n  var body = $('Wazuh Alert Webhook').first().json.body;\n  var ai = $json;\n  var level = body && body.rule ? body.rule.level : 'N/A';\n  var ruleId = body && body.rule ? body.rule.id : 'N/A';\n  var ruleDesc = body && body.rule ? body.rule.description : 'N/A';\n  var groups = body && body.rule && body.rule.groups ? body.rule.groups.join(', ') : 'N/A';\n  var agentName = body && body.agent ? body.agent.name : 'N/A';\n  var agentId = body && body.agent ? body.agent.id : 'N/A';\n  var timestamp = body ? body.timestamp : 'N/A';\n  var fullLog = body ? (body.full_log ? body.full_log : 'N/A') : 'N/A';\n  var location = body ? (body.location ? body.location : 'N/A') : 'N/A';\n  var decoder = body && body.decoder ? body.decoder.name : 'N/A';\n  var sevColor = ai.severity === 'critical' ? '#dc2626' : (ai.severity === 'high' ? '#ea580c' : (ai.severity === 'medium' ? '#d97706' : '#2563eb'));\n  var sevBg = ai.severity === 'critical' ? '#fef2f2' : (ai.severity === 'high' ? '#fff7ed' : (ai.severity === 'medium' ? '#fffbeb' : '#eff6ff'));\n  return '<div style=\"font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; max-width: 640px; margin: 0 auto; background: #f8fafc; padding: 0;\">'\n    + '<div style=\"background: ' + sevColor + '; padding: 24px 32px; border-radius: 8px 8px 0 0;\">'\n    + '<h1 style=\"color: #fff; margin: 0; font-size: 20px; font-weight: 600;\">&#x1f6e1;&#xfe0f; Wazuh Security Alert</h1>'\n    + '<p style=\"color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 14px;\">AI-triaged notification from your homelab</p>'\n    + '</div>'\n    + '<div style=\"background: #fff; padding: 24px 32px; border: 1px solid #e2e8f0; border-top: none;\">'\n    + '<div style=\"background: ' + sevBg + '; border-left: 4px solid ' + sevColor + '; padding: 16px; border-radius: 4px; margin-bottom: 20px;\">'\n    + '<div style=\"font-size: 12px; text-transform: uppercase; font-weight: 700; color: ' + sevColor + '; letter-spacing: 0.5px;\">Severity: ' + (ai.severity ? ai.severity.toUpperCase() : 'UNKNOWN') + '</div>'\n    + '<div style=\"font-size: 16px; font-weight: 600; color: #1e293b; margin-top: 4px;\">' + (ai.summary ? ai.summary : '') + '</div>'\n    + '</div>'\n    + '<h2 style=\"font-size: 14px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin: 20px 0 12px; letter-spacing: 0.5px;\">AI Analysis</h2>'\n    + '<p style=\"color: #334155; font-size: 14px; line-height: 1.6; margin: 0 0 16px;\">' + (ai.analysis ? ai.analysis : '') + '</p>'\n    + '<div style=\"background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px;\">'\n    + '<div style=\"font-size: 12px; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;\">&#x2705; Recommendation</div>'\n    + '<p style=\"color: #166534; font-size: 14px; margin: 4px 0 0; line-height: 1.5;\">' + (ai.recommendation ? ai.recommendation : '') + '</p>'\n    + '</div>'\n    + '<h2 style=\"font-size: 14px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin: 20px 0 12px; letter-spacing: 0.5px;\">Alert Details</h2>'\n    + '<table style=\"width: 100%; border-collapse: collapse; font-size: 13px;\">'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; width: 130px; border: 1px solid #e2e8f0;\">Rule ID</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + ruleId + '</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Rule Level</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + level + ' / 15</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Description</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + ruleDesc + '</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Groups</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + groups + '</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Agent</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + agentName + ' (ID: ' + agentId + ')</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Timestamp</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + timestamp + '</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Location</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + location + '</td></tr>'\n    + '<tr><td style=\"padding: 8px 12px; background: #f8fafc; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;\">Decoder</td><td style=\"padding: 8px 12px; color: #1e293b; border: 1px solid #e2e8f0;\">' + decoder + '</td></tr>'\n    + '</table>'\n    + '<h2 style=\"font-size: 14px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin: 20px 0 12px; letter-spacing: 0.5px;\">Full Log</h2>'\n    + '<pre style=\"background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 6px; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-break: break-all;\">' + fullLog + '</pre>'\n    + '</div>'\n    + '<div style=\"padding: 16px 32px; text-align: center; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; background: #f8fafc;\">'\n    + '<p style=\"color: #94a3b8; font-size: 12px; margin: 0;\">Wazuh SIEM/XDR &bull; AI-triaged by Gemini &bull; Homelab Security</p>'\n    + '</div>'\n    + '</div>';\n})() }}",
-        "options": {},
-        "subject": "={{ '[Wazuh ' + ($json.severity ? $json.severity.toUpperCase() : 'ALERT') + '] ' + ($json.summary ? $json.summary : 'Security Alert') }}",
+        "html": "={{ $json.htmlBody }}",
+        "options": {
+          "attachments": "report"
+        },
+        "subject": "={{ $json.subject }}",
         "toEmail": "your-recipient@example.com"
       },
-      "position": [1220, 300],
+      "position": [2040, 400],
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "credentials": {
@@ -112,56 +204,133 @@
           "name": "Gmail SMTP"
         }
       }
+    },
+    {
+      "id": "gotify-push",
+      "name": "Gotify Push",
+      "parameters": {
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.gotifyTitle }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.gotifyMessage }}"
+            },
+            {
+              "name": "priority",
+              "value": "={{ $json.gotifyPriority }}"
+            }
+          ]
+        },
+        "contentType": "json",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "url": "http://gotify:80/message?token=YOUR_GOTIFY_APP_TOKEN"
+      },
+      "position": [2040, 600],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4
+    },
+    {
+      "id": "mark-processed",
+      "name": "Mark Alerts Processed",
+      "parameters": {
+        "jsCode": "const alertRows = $('Get Unprocessed Alerts').all();\n\nreturn alertRows.map(row => ({\n  json: {\n    id: row.json.id,\n    processed: true\n  }\n}));",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      },
+      "position": [2040, 800],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "update-processed",
+      "name": "Update Data Table",
+      "parameters": {
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "processed": "={{ true }}"
+          }
+        },
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_DATA_TABLE_ID"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "condition": "eq",
+              "keyName": "id",
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "operation": "update",
+        "resource": "row"
+      },
+      "position": [2300, 800],
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "no-alerts",
+      "name": "No Alerts",
+      "parameters": {},
+      "position": [980, 700],
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1
     }
   ],
   "connections": {
     "Wazuh Alert Webhook": {
+      "main": [[{"node": "Extract Alert Fields", "type": "main", "index": 0}]]
+    },
+    "Extract Alert Fields": {
+      "main": [[{"node": "Store in Data Table", "type": "main", "index": 0}]]
+    },
+    "Hourly Digest Trigger": {
+      "main": [[{"node": "Get Unprocessed Alerts", "type": "main", "index": 0}]]
+    },
+    "Get Unprocessed Alerts": {
+      "main": [[{"node": "Has Alerts?", "type": "main", "index": 0}]]
+    },
+    "Has Alerts?": {
       "main": [
-        [
-          {
-            "node": "Gemini AI Triage",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{"node": "Prepare Gemini Prompt", "type": "main", "index": 0}],
+        [{"node": "No Alerts", "type": "main", "index": 0}]
       ]
     },
-    "Gemini AI Triage": {
-      "main": [
-        [
-          {
-            "node": "Parse AI Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Prepare Gemini Prompt": {
+      "main": [[{"node": "AI Analysis", "type": "main", "index": 0}]]
+    },
+    "Gemini": {
+      "ai_languageModel": [[{"node": "AI Analysis", "type": "ai_languageModel", "index": 0}]]
+    },
+    "AI Analysis": {
+      "main": [[{"node": "Parse AI Response", "type": "main", "index": 0}]]
     },
     "Parse AI Response": {
-      "main": [
-        [
-          {
-            "node": "Is Actionable?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Build Email & Markdown", "type": "main", "index": 0}]]
     },
-    "Is Actionable?": {
-      "main": [
-        [
-          {
-            "node": "Send Alert Email",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
+    "Build Email & Markdown": {
+      "main": [[
+        {"node": "Send Digest Email", "type": "main", "index": 0},
+        {"node": "Gotify Push", "type": "main", "index": 0},
+        {"node": "Mark Alerts Processed", "type": "main", "index": 0}
+      ]]
+    },
+    "Mark Alerts Processed": {
+      "main": [[{"node": "Update Data Table", "type": "main", "index": 0}]]
     }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin"
   }
 }
