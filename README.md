@@ -1,6 +1,6 @@
 # Homelab
 
-A single Docker Compose stack running 13 containers with Terraform-managed Cloudflare infrastructure. Everything is Infrastructure as Code — no manual configuration, no secrets in version control.
+A single Docker Compose stack running 14 containers with Terraform-managed Cloudflare infrastructure. Everything is Infrastructure as Code — no manual configuration, no secrets in version control.
 
 ## Architecture
 
@@ -30,6 +30,7 @@ graph TB
             PORT[Portainer]
             SPDF[Stirling PDF]
             WD[Wazuh Dashboard]
+            GOT[Gotify]
         end
 
         subgraph monitoring[Monitoring Network]
@@ -48,13 +49,14 @@ graph TB
     end
 
     CF --> ZT --> CFD
-    CFD --> HP & GF & N8N & PORT & SPDF & WD
-    HP -.->|widgets| GF & PORT & Sonarr & Radarr & Jellyfin & Deluge & CFD
+    CFD --> HP & GF & N8N & PORT & SPDF & WD & GOT
+    HP -.->|widgets| GF & PORT & GOT & Sonarr & Radarr & Jellyfin & Deluge & CFD
     GF --> PROM
     PROM --> NE & BE & SE & N8N
     WM --> WI
     WD --> WI & WM
     WM -->|alerts| N8N
+    N8N -->|push| GOT
     AGENT -->|1514/1515| WM
     BE -.->|probes| CF
 ```
@@ -73,6 +75,7 @@ graph LR
         stirling-pdf
         wazuh-dashboard
         blackbox-exporter
+        gotify
     end
 
     subgraph monitoring[monitoring network]
@@ -99,29 +102,43 @@ Services connect to multiple networks as needed. Only `cloudflared` faces the in
 
 ## Wazuh Alert Pipeline
 
+The alert notification system uses a batch-and-triage architecture. Alerts are stored in an n8n Data Table and processed hourly with Gemini AI analysis, then delivered via email and push notification.
+
 ```mermaid
 sequenceDiagram
     participant Agent as Wazuh Agent<br/>(Host)
     participant Manager as Wazuh Manager
-    participant N8N as n8n Webhook
+    participant Webhook as n8n Webhook
+    participant DB as n8n Data Table
+    participant Schedule as Hourly Trigger
     participant Gemini as Gemini AI
     participant Email as Gmail SMTP
+    participant Gotify as Gotify Push
 
     Agent->>Manager: Security event (syslog, FIM, etc.)
     Manager->>Manager: Correlate & classify (rule engine)
     alt Alert level >= 10
-        Manager->>N8N: POST /webhook/wazuh-alerts (JSON)
-        N8N->>Gemini: Analyze alert context
-        Gemini->>N8N: JSON verdict (actionable, severity, analysis)
-        alt Actionable threat
-            N8N->>Email: HTML email with AI triage report
-        else Noise / informational
-            N8N->>N8N: Discard (no notification)
-        end
-    else Alert level < 10
-        Manager->>Manager: Log only (no webhook)
+        Manager->>Webhook: POST /webhook/wazuh-alerts (JSON)
+        Webhook->>DB: Store alert (processed=false)
+    end
+
+    Note over Schedule,Gotify: Every hour
+    Schedule->>DB: Query unprocessed alerts
+    alt Has unprocessed alerts
+        DB->>Gemini: Batch alerts for AI analysis
+        Gemini->>Gemini: Severity assessment, MITRE mapping,<br/>executive summary
+        Gemini->>Email: HTML digest + Markdown attachment
+        Gemini->>Gotify: Push notification with threat level
+        Gemini->>DB: Mark alerts as processed
     end
 ```
+
+**Pipeline nodes (16 total, single workflow with dual triggers):**
+
+| Path | Nodes |
+|------|-------|
+| **Ingest** | Wazuh Alert Webhook -> Extract Alert Fields -> Store in Data Table |
+| **Digest** | Hourly Trigger -> Get Unprocessed Alerts -> Has Alerts? -> Prepare Prompt -> AI Analysis (Gemini) -> Parse Response -> Build Email & Markdown -> Send Email + Gotify Push + Mark Processed -> Update Data Table |
 
 ## Terraform Infrastructure
 
@@ -136,7 +153,7 @@ graph TD
     subgraph Managed Resources
         R1[cloudflare_zero_trust_tunnel_cloudflared]
         R2[cloudflare_zero_trust_tunnel_cloudflared_config]
-        R3["cloudflare_dns_record (x6)"]
+        R3["cloudflare_dns_record (x7)"]
         R4["cloudflare_zero_trust_access_application (x6)"]
     end
 
@@ -149,7 +166,7 @@ graph TD
     ACCESS -->|protects| TUNNEL
 ```
 
-Terraform manages ~15 resources: the tunnel, its ingress config, 6 DNS records, and 6 Zero Trust access policies (one per public service). All services require email OTP authentication before reaching the application.
+Terraform manages ~16 resources: the tunnel, its ingress config, 7 DNS records, and 6 Zero Trust access policies. All services except Gotify require email OTP authentication before reaching the application. Gotify uses token-based authentication only (the Android app cannot handle Cloudflare Access OTP).
 
 ## Services
 
@@ -159,6 +176,7 @@ Terraform manages ~15 resources: the tunnel, its ingress config, 6 DNS records, 
 | **homepage** | Dashboard with service widgets | `https://domain.com` | - |
 | **portainer** | Container management | `https://portainer.domain.com` | - |
 | **stirling-pdf** | PDF manipulation tools | `https://pdf.domain.com` | - |
+| **gotify** | Push notifications | `https://gotify.domain.com` | - |
 | **n8n** | Workflow automation | `https://n8n.domain.com` | - |
 | **grafana** | Metrics visualization | `https://grafana.domain.com` | - |
 | **prometheus** | Metrics storage | Internal only | - |
@@ -175,6 +193,8 @@ Terraform manages ~15 resources: the tunnel, its ingress config, 6 DNS records, 
 Every public service is protected by two layers:
 1. **Cloudflare Zero Trust** — email OTP gate before any traffic reaches the server
 2. **Application-level login** — each service has its own credentials
+
+**Exception:** Gotify is protected by Cloudflare Tunnel (no exposed ports) + WAF/DDoS protection + its built-in token authentication, but does **not** have a Cloudflare Access policy. The Gotify Android app makes direct HTTP/WebSocket calls and cannot handle the email OTP flow. Registration is disabled (`GOTIFY_REGISTRATION=false`).
 
 ### Container Hardening
 All containers follow a hardened baseline:
@@ -194,9 +214,13 @@ All containers follow a hardened baseline:
 
 ```
 homelab/
-├── docker-compose.yml              # All 13 services
+├── docker-compose.yml              # All 14 services
 ├── .env.sample                     # Environment template (copy to .env)
 ├── .gitignore
+├── .opencode/
+│   └── skills/
+│       └── security-analyst/       # OpenCode skill for Wazuh alert investigation
+│           └── SKILL.md
 ├── secrets/                        # Docker secrets (gitignored contents)
 ├── files/
 │   ├── grafana/
@@ -223,7 +247,7 @@ homelab/
 │   └── wazuh/
 │       ├── ossec.conf              # Manager configuration
 │       ├── integrations/
-│       │   └── custom-n8n          # Alert → n8n webhook script
+│       │   └── custom-n8n          # Alert -> n8n webhook script
 │       ├── certs/                  # TLS certificates (gitignored)
 │       ├── indexer/
 │       │   ├── opensearch.yml
@@ -248,6 +272,7 @@ homelab/
 - A Cloudflare account with a domain
 - (Optional) Google Gemini API key for AI-powered alert triage
 - (Optional) SMTP credentials for email notifications
+- (Optional) Gotify Android/iOS app for push notifications
 
 ### 1. Clone and configure
 
@@ -298,15 +323,23 @@ cd ..
 docker compose up -d
 ```
 
-### 6. Restore the n8n workflow (optional)
+### 6. Set up Gotify (optional)
+
+1. Open Gotify at `https://gotify.<your-domain>` and log in with the admin credentials from `.env`
+2. Create an **Application** (e.g., "n8n Wazuh Alerts") — copy the app token for the n8n workflow
+3. Create a **Client** (e.g., "Homepage Widget") — copy the client token to `HOMEPAGE_VAR_GOTIFY_KEY` in `.env`
+4. Install the [Gotify Android app](https://github.com/gotify/android) and log in with the server URL and admin credentials
+
+### 7. Restore the n8n workflow (optional)
 
 1. Open n8n at `https://n8n.<your-domain>`
 2. Create SMTP and Google Gemini credentials
-3. Import `files/n8n/workflows/wazuh-ai-triage.json`
-4. Update the credential references and email addresses in the workflow
-5. Activate the workflow
+3. Create a Data Table named `wazuh_alerts` with columns: `alert_id` (string), `rule_id` (string), `rule_level` (number), `rule_description` (string), `agent_name` (string), `timestamp` (string), `full_log` (string), `location` (string), `decoder` (string), `rule_groups` (string), `alert_json` (string), `processed` (boolean), `received_at` (string)
+4. Import `files/n8n/workflows/wazuh-ai-triage.json`
+5. Update placeholder values: `YOUR_DATA_TABLE_ID`, `YOUR_GEMINI_CREDENTIAL_ID`, `YOUR_SMTP_CREDENTIAL_ID`, `YOUR_GOTIFY_APP_TOKEN`, and the email addresses
+6. Activate the workflow
 
-### 7. Install Wazuh agent (optional)
+### 8. Install Wazuh agent (optional)
 
 Install the Wazuh agent on the host to monitor the system itself:
 
