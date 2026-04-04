@@ -306,17 +306,30 @@ Launch ONE `general` subagent with the Task tool to read the digest report file 
 - Blast radius (what could an attacker reach from the compromised component?)
 - Likelihood assessment (plausibly malicious given the homelab context?)
 
-**Step 5: Check Historical Context** — If n8n is running and has a data table with previous alerts, query it:
-```bash
-# Check if n8n is running and has the data table
-docker exec n8n wget -qO- 'http://localhost:5678/api/v1/data-tables' --header 'Accept: application/json' 2>/dev/null | head -5
+**Step 5: Check Historical Context** — The orchestrator (you) must query the n8n data table for previous alerts BEFORE dispatching this subagent, then include the results in the subagent's prompt. Subagents do not have access to MCP tools.
+
+**As the orchestrator, use the `n8n-mcp_n8n_manage_datatable` tool:**
+
 ```
-If available, note how many times the same rule IDs have fired previously. Increasing frequency of a rule may indicate an evolving threat, not just noise.
+Tool: n8n-mcp_n8n_manage_datatable
+Parameters:
+  action: "getRows"
+  tableId: <discover the table ID by calling n8n-mcp_n8n_manage_datatable with action "listTables" first>
+  limit: 100
+  sortBy: "received_at:desc"
+```
+
+Look for a table named `wazuh_alerts`. Extract the `rule_id`, `rule_level`, `rule_description`, `agent_name`, and `timestamp` columns from recent rows. Summarize:
+- How many times each rule ID has fired in the last 7/30 days
+- Whether frequency is increasing, stable, or decreasing
+- Any rule IDs from the current digest that have never been seen before (novel alerts)
+
+Pass this historical summary to the Phase 1 subagent as context. If the n8n MCP tool is unavailable or the data table does not exist, skip historical context and note it in the report.
 
 The agent must return:
 - A structured list of all alerts with extracted fields and FP catalog matches
 - Correlation groups (which alerts belong together and why)
-- Historical context (previous occurrences if available)
+- Historical context (previous occurrences from the data provided by the orchestrator)
 - Initial MITRE ATT&CK classification for each group
 - A prioritized list of investigation tasks per group (specific commands to run)
 
