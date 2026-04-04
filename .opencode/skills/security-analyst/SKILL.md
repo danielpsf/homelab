@@ -1,6 +1,6 @@
 ---
 name: security-analyst
-description: Analyze Wazuh SIEM/XDR security alert reports from the homelab, investigate threats, and propose automated fixes
+description: Analyze Wazuh SIEM/XDR security alert reports, investigate threats, and propose automated fixes
 ---
 
 # Security Analyst — Wazuh Alert Investigation Skill
@@ -20,9 +20,9 @@ Your job is to go deeper than the AI triage — correlate alerts, investigate on
 
 - The user provides a security alert report (markdown file) from the Wazuh notification system
 - The user asks to investigate a security incident or suspicious activity
-- The user asks to assess vulnerabilities or propose fixes for the homelab
+- The user asks to assess vulnerabilities or propose fixes for the environment
 - The user wants to review Wazuh alert patterns or tune detection rules
-- The user asks about the security posture of the homelab environment
+- The user asks about the security posture of the environment
 - The user asks to run a proactive security scan or vulnerability assessment
 
 ## Security Principles
@@ -38,7 +38,7 @@ Your job is to go deeper than the AI triage — correlate alerts, investigate on
 
 ## Environment Discovery
 
-This is a single-host homelab. Understand the architecture before making any assessment.
+Understand the architecture before making any assessment. Do NOT assume the number of hosts, the topology, or the scale.
 
 ### Infrastructure Discovery
 
@@ -56,8 +56,9 @@ docker --version
 docker compose version
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" | sort
 
-# Wazuh agent identity
-docker exec wazuh-manager /var/ossec/bin/agent_control -l 2>/dev/null || true
+# Wazuh agent identity (discover the manager container name from docker ps first)
+WAZUH_MGR=$(docker ps --format '{{.Names}}' | grep -i 'wazuh.*manager' | head -1)
+[ -n "$WAZUH_MGR" ] && docker exec "$WAZUH_MGR" /var/ossec/bin/agent_control -l 2>/dev/null || true
 
 # Network posture
 ss -tulnp | head -40
@@ -83,7 +84,7 @@ These are architectural patterns to be aware of — discover the specifics durin
 
 ### Container Inventory
 
-Do NOT rely on a hardcoded container list. Discover the running containers during Infrastructure Discovery using `docker ps`. Cross-reference with the `docker-compose.yml` in the homelab repo to understand each container's purpose and expected behavior.
+Do NOT rely on a hardcoded container list. Discover the running containers during Infrastructure Discovery using `docker ps`. Cross-reference with the `docker-compose.yml` in the project root to understand each container's purpose and expected behavior.
 
 ### Project File Locations
 
@@ -92,16 +93,16 @@ Do NOT assume absolute paths. Discover the project root by looking for the `dock
 ```bash
 # Find the project root (contains docker-compose.yml)
 # Then explore the structure from there:
-ls -la           # docker-compose.yml, .env, files/, terraform/
-ls -la files/    # Service configuration directories
-ls -la terraform/ # Infrastructure as code (if present)
+ls -la           # Look for docker-compose.yml, .env, and config directories
+ls -la files/ 2>/dev/null || ls -la config/ 2>/dev/null  # Service configuration directories
+ls -la terraform/ 2>/dev/null   # Infrastructure as code (if present)
 ```
 
-Expect to find:
-- `docker-compose.yml` — All container definitions
+Expect to find (names may vary):
+- `docker-compose.yml` — Container definitions
 - `.env` — Secrets and environment variables (**NEVER read or display**)
-- `files/` — Service-specific configuration (Wazuh ossec.conf, integrations, etc.)
-- `terraform/` — Infrastructure as code (DNS, tunnel, access policies)
+- A service configuration directory (e.g., `files/`, `config/`) — Service-specific configs
+- A Terraform/OpenTofu directory (if IaC is used) — DNS, tunnel, access policies
 
 ## Local Data Store
 
@@ -119,16 +120,16 @@ This catalog is a machine-readable YAML file that accumulates known false positi
 # .local/security/false-positives.yml
 # Auto-maintained by the security-analyst skill. NEVER commit to git.
 version: 1
-last_updated: "2026-04-04T21:00:00Z"
+last_updated: "YYYY-MM-DDTHH:MM:SSZ"
 entries:
   - id: fp-001
-    rule_id: 533
-    pattern: "Process 'zen' changed UDP port"
-    reason: "Zen Browser WebRTC/QUIC ephemeral port rotation — normal browser behavior"
-    wazuh_suppression_rule: 100010
-    added: "2026-04-04"
-    last_seen: "2026-04-04"
-    occurrences: 3
+    rule_id: <wazuh_rule_id>
+    pattern: "<substring or regex matching the alert description or log line>"
+    reason: "<why this is a false positive in this environment>"
+    wazuh_suppression_rule: <custom_rule_id or null>
+    added: "YYYY-MM-DD"
+    last_seen: "YYYY-MM-DD"
+    occurrences: 1
   # More entries added automatically during investigations
 ```
 
@@ -170,8 +171,8 @@ grep -q '\.local/' .gitignore || echo -e '\n# Local security data (investigation
 |-------|---------|--------|
 | 0-4 | Low / informational | Ignored |
 | 5-9 | Medium / notable | Logged only |
-| 10-12 | High / suspicious | Forwarded to n8n, triaged by Gemini, included in digest |
-| 13-15 | Critical / active threat | Forwarded to n8n, triaged by Gemini, included in digest |
+| 10-12 | High / suspicious | Forwarded to automation workflow for AI triage, included in digest |
+| 13-15 | Critical / active threat | Forwarded to automation workflow for AI triage, included in digest |
 
 Only alerts at level 10 and above reach the digest reports you will analyze.
 
@@ -304,7 +305,7 @@ Launch ONE `general` subagent with the Task tool to read the digest report file 
 - MITRE ATT&CK classification (Tactic + Technique)
 - Gemini triage validation (agree/disagree with AI, and why)
 - Blast radius (what could an attacker reach from the compromised component?)
-- Likelihood assessment (plausibly malicious given the homelab context?)
+- Likelihood assessment (plausibly malicious given the environment context?)
 
 **Step 5: Check Historical Context** — The orchestrator (you) must query the n8n data table for previous alerts BEFORE dispatching this subagent, then include the results in the subagent's prompt. Subagents do not have access to MCP tools.
 
@@ -319,7 +320,7 @@ Parameters:
   sortBy: "received_at:desc"
 ```
 
-Look for a table named `wazuh_alerts`. Extract the `rule_id`, `rule_level`, `rule_description`, `agent_name`, and `timestamp` columns from recent rows. Summarize:
+Look for a table that stores Wazuh alert data (typically named something like `wazuh_alerts`). Extract columns related to rule ID, severity level, description, agent name, and timestamp from recent rows. Summarize:
 - How many times each rule ID has fired in the last 7/30 days
 - Whether frequency is increasing, stable, or decreasing
 - Any rule IDs from the current digest that have never been seen before (novel alerts)
@@ -528,35 +529,45 @@ For every major service discovered during Infrastructure Discovery (the containe
 - For any CVE found, check the CISA KEV match from step 3c
 
 Focus on:
-- The container runtime (Docker Engine version)
+- The container runtime (Docker/Podman version)
 - The host kernel version
-- Wazuh (manager, indexer, dashboard)
-- n8n
-- Any other internet-facing service
+- Wazuh components (manager, indexer, dashboard)
+- Any workflow automation platform (n8n, etc.)
+- Any other internet-facing service discovered during Infrastructure Discovery
 
 #### 3e. Wazuh SCA (Security Configuration Assessment) Results
 
 Query Wazuh's SCA database for CIS benchmark results:
 
 ```bash
+# Discover the Wazuh manager container name
+WAZUH_MGR=$(docker ps --format '{{.Names}}' | grep -i 'wazuh.*manager' | head -1)
+
 # Get SCA scan results for the host agent
-docker exec wazuh-manager /var/ossec/bin/agent_control -l 2>/dev/null
+docker exec "$WAZUH_MGR" /var/ossec/bin/agent_control -l 2>/dev/null
 # Use the agent ID found above (usually 001 for the host)
-docker exec wazuh-manager curl -sk -X GET \
-  "https://localhost:55000/sca/AGENT_ID?pretty=true" \
-  -H "Authorization: Bearer $(docker exec wazuh-manager curl -sk -X POST \
+
+# Attempt SCA API query — this requires Wazuh API credentials.
+# Discover the API user from docker-compose.yml environment variables
+# (look for WAZUH_API_USERNAME or similar — do NOT read .env).
+# If credentials cannot be discovered, skip SCA and note it in the report.
+WAZUH_API_USER=$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$WAZUH_MGR" 2>/dev/null | grep -i 'API_USERNAME' | cut -d= -f2)
+if [ -n "$WAZUH_API_USER" ]; then
+  TOKEN=$(docker exec "$WAZUH_MGR" curl -sk -X POST \
     'https://localhost:55000/security/user/authenticate' \
     -H 'Content-Type: application/json' \
     -d '{"raw": true}' \
-    -u 'wazuh-wui:' 2>/dev/null)" 2>/dev/null | head -100
-
-# Get failed checks specifically
-docker exec wazuh-manager curl -sk -X GET \
-  "https://localhost:55000/sca/AGENT_ID/checks?status=failed&pretty=true" \
-  -H "Authorization: Bearer $TOKEN" 2>/dev/null | head -200
+    -u "${WAZUH_API_USER}:" 2>/dev/null)
+  docker exec "$WAZUH_MGR" curl -sk -X GET \
+    "https://localhost:55000/sca/AGENT_ID?pretty=true" \
+    -H "Authorization: Bearer $TOKEN" 2>/dev/null | head -100
+  docker exec "$WAZUH_MGR" curl -sk -X GET \
+    "https://localhost:55000/sca/AGENT_ID/checks?status=failed&pretty=true" \
+    -H "Authorization: Bearer $TOKEN" 2>/dev/null | head -200
+fi
 ```
 
-Note: The Wazuh API credentials are in `.env` which you must NOT read. If the API calls fail due to authentication, skip SCA and note it in the report. The user can provide credentials verbally if needed.
+Note: The Wazuh API credentials may be in `.env` which you must NOT read. If the API user cannot be discovered from the container environment and API calls fail due to authentication, skip SCA and note it in the report. The user can provide credentials verbally if needed.
 
 The subagent must return:
 - Trivy scan summary: total images scanned, total HIGH/CRITICAL CVEs, top 10 most severe
@@ -606,16 +617,17 @@ If any finding is classified as **True Positive — Critical**, immediately:
    # Capture process tree
    ps auxf > /tmp/evidence-procs-$(date +%s).txt
    ```
-3. **Push notification**: If Gotify is available, send an immediate alert:
+3. **Push notification**: If a push notification service (e.g., Gotify, ntfy) is available, send an immediate alert:
    ```bash
-   # Discover Gotify container and token from docker-compose.yml
-   # Send critical alert (priority 10 = highest)
-   docker exec WORKFLOW_CONTAINER wget -qO- \
-     --post-data='{"title":"CRITICAL SECURITY ALERT","message":"[description]","priority":10}' \
-     --header='Content-Type: application/json' \
-     'http://GOTIFY_CONTAINER:PORT/message?token=APP_TOKEN' 2>/dev/null
+   # Discover push notification container and credentials from docker-compose.yml
+   # Look for gotify, ntfy, or similar in the compose file — do NOT read .env
+   # Example for Gotify (adapt based on what is discovered):
+   # docker exec CONTAINER wget -qO- \
+   #   --post-data='{"title":"CRITICAL SECURITY ALERT","message":"[description]","priority":10}' \
+   #   --header='Content-Type: application/json' \
+   #   'http://GOTIFY_HOST:PORT/message?token=APP_TOKEN' 2>/dev/null
    ```
-   Discover the Gotify container name and token from `docker-compose.yml` environment variables (look for `GOTIFY` in the compose file, NOT in `.env`).
+   Discover the container name, port, and app token from `docker-compose.yml` environment variables (do NOT read `.env`).
 4. **Recovery guidance**: After containment, provide steps to restore the affected service securely
 
 #### Wazuh Active Response Recommendations
@@ -741,11 +753,20 @@ For each false positive or noisy alert, provide the exact rule XML to add to `lo
 </group>
 ```
 
-Custom rule IDs should start at 100010 and increment. Check existing `local_rules.xml` for the highest ID in use before assigning new ones.
+Custom rule IDs should start at 100010 and increment. Before assigning new IDs, discover the highest ID in use:
+
+```bash
+# Find existing local_rules.xml and get the highest custom rule ID
+LOCAL_RULES=$(find . -name 'local_rules.xml' -path '*/wazuh/*' 2>/dev/null | head -1)
+if [ -n "$LOCAL_RULES" ]; then
+  grep -oP 'id="\K[0-9]+' "$LOCAL_RULES" | sort -n | tail -1
+fi
+```
 
 After applying tuning changes, restart the Wazuh manager container:
 ```bash
-docker restart wazuh-manager
+WAZUH_MGR=$(docker ps --format '{{.Names}}' | grep -i 'wazuh.*manager' | head -1)
+docker restart "$WAZUH_MGR"
 ```
 
 ### Active Response Recommendations
@@ -758,7 +779,7 @@ docker restart wazuh-manager
 ## Important Reminders
 
 - **Local-only data**: Investigation reports (`.local/security/investigations/`), scan results (`.local/security/scans/`), and the false positive catalog (`.local/security/false-positives.yml`) must NEVER be committed to git. Always verify `.local/` is in `.gitignore`.
-- **Trivy via Docker**: Always run Trivy as `docker run aquasec/trivy:latest` — do not install on the host.
+- **Trivy via Docker**: Always run Trivy as a Docker container with a pinned, verified safe version (see Phase 3a safety protocol) — do not install on the host and NEVER use `:latest`.
 - **CVE prioritization**: CISA KEV matches > CRITICAL CVSS > HIGH CVSS. A KEV-listed vulnerability is confirmed exploited in the wild and takes absolute priority.
 - **Compensating controls change risk ratings**: A CRITICAL CVE behind a zero-trust proxy with no direct network exposure is less urgent than a HIGH CVE on a service bound to `0.0.0.0`. Always factor in the defense-in-depth layers.
 - **Trend matters**: A rule firing once is noise. The same rule firing with increasing frequency over weeks is a signal. Check historical data when available.
