@@ -27,3 +27,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Local security data (investigation reports, scans, FP catalog)
+.local/

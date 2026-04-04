@@ -210,6 +210,21 @@ All containers follow a hardened baseline:
 - **Portainer**: Admin password stored as a Docker secret (`./secrets/`).
 - **Wazuh**: TLS certificates in `files/wazuh/certs/` (gitignored).
 
+### AI-Powered Security Analysis
+
+This project includes a custom [OpenCode](https://opencode.ai) skill that turns natural language requests into full-depth security investigations. When a Wazuh alert digest arrives or a manual security review is needed, the **security-analyst** skill orchestrates a multi-phase assessment:
+
+1. **Proactive Attack Surface Audit** — scans network exposure, container hardening, authentication posture, firewall state, and host patch level before even reading the alert digest
+2. **Alert Parsing & Correlation** — extracts structured fields from every alert, cross-references a local false positive catalog, groups related alerts by time and source, maps them to MITRE ATT&CK, and checks historical trends via the n8n data table
+3. **Live Investigation** — dispatches parallel agents to investigate each alert group on the running system, collecting evidence and assessing compensating controls (network isolation, zero-trust policies, capability restrictions, read-only filesystems)
+4. **Vulnerability Assessment** — scans all container images and the host filesystem with Trivy (pinned to a verified safe version with a supply chain safety protocol addressing CVE-2026-33634), cross-references findings against the CISA Known Exploited Vulnerabilities catalog and NVD, and reviews Wazuh SCA/CIS benchmark results
+5. **Synthesis & Reporting** — assembles a structured security assessment with executive summary, threat matrix, detailed findings, prioritized remediation plan, Wazuh tuning recommendations, and active response proposals
+6. **Supply Chain Assessment** — audits container image freshness, tag pinning, and registry trust
+
+All investigation outputs — reports, scan results, and the false positive catalog — are stored locally in `.local/security/` and never committed to version control. The false positive catalog is maintained as a YAML file that accumulates institutional knowledge across investigations, reducing noise over time without embedding environment-specific data in the skill itself.
+
+The skill is defined in `.opencode/skills/security-analyst/SKILL.md` and can be triggered by providing a Wazuh digest file or asking about the homelab's security posture.
+
 ## Project Structure
 
 ```
@@ -221,6 +236,11 @@ homelab/
 │   └── skills/
 │       └── security-analyst/       # OpenCode skill for Wazuh alert investigation
 │           └── SKILL.md
+├── .local/                         # Local-only security data (gitignored)
+│   └── security/
+│       ├── false-positives.yml     # Known FP catalog (auto-maintained)
+│       ├── investigations/         # Dated investigation reports
+│       └── scans/                  # Trivy and CVE scan results
 ├── secrets/                        # Docker secrets (gitignored contents)
 ├── files/
 │   ├── grafana/
@@ -248,6 +268,8 @@ homelab/
 │       ├── ossec.conf              # Manager configuration
 │       ├── integrations/
 │       │   └── custom-n8n          # Alert -> n8n webhook script
+│       ├── rules/
+│       │   └── local_rules.xml     # Custom suppression rules
 │       ├── certs/                  # TLS certificates (gitignored)
 │       ├── indexer/
 │       │   ├── opensearch.yml
