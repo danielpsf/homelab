@@ -1,0 +1,6 @@
+# git-crypt: files encrypted at rest in the repository
+# Decrypted transparently in the working tree when unlocked.
+# Key must be exported and backed up externally for recovery.
+
+# Wazuh custom rules — reveals detection blind spots / suppressed alerts
+files/wazuh/rules/local_rules.xml filter=git-crypt diff=git-crypt

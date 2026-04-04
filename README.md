@@ -210,6 +210,42 @@ All containers follow a hardened baseline:
 - **Portainer**: Admin password stored as a Docker secret (`./secrets/`).
 - **Wazuh**: TLS certificates in `files/wazuh/certs/` (gitignored).
 
+### Encrypted Files (git-crypt)
+
+Some configuration files are version-controlled but encrypted at rest in the repository using [git-crypt](https://github.com/AGWA/git-crypt). These files contain security-sensitive data (e.g., Wazuh detection suppression rules that reveal monitoring blind spots) and appear as binary blobs in the repo unless unlocked.
+
+**Currently encrypted files:**
+- `files/wazuh/rules/local_rules.xml` — Custom Wazuh rules that suppress known false positives
+
+**How it works:**
+- Files matching patterns in `.gitattributes` are transparently encrypted on commit and decrypted on checkout
+- The working tree always contains plaintext (when unlocked) — Docker can mount these files normally
+- The symmetric key is stored in `.git/git-crypt/keys/default` (never pushed) and should be backed up externally
+
+**Recovery (fresh clone):**
+
+```bash
+# 1. Install git-crypt
+sudo apt-get install -y git-crypt
+
+# 2. Clone the repository
+git clone https://github.com/danielpsf/homelab.git
+cd homelab
+
+# 3. Restore the key from your external backup (decode the base64-encoded key back to a file)
+echo '<base64-key>' | base64 -d > /tmp/homelab-git-crypt-key
+
+# 4. Unlock the repository
+git-crypt unlock /tmp/homelab-git-crypt-key
+
+# 5. Verify and clean up
+git-crypt status          # should show "encrypted:" for protected files
+file files/wazuh/rules/local_rules.xml   # should show "XML" or "text"
+rm /tmp/homelab-git-crypt-key
+```
+
+**To add more encrypted files:** Add a pattern to `.gitattributes`, then `git rm --cached <file> && git add <file>` to re-stage it through the encryption filter.
+
 ### AI-Powered Security Analysis
 
 This project includes a custom [OpenCode](https://opencode.ai) skill that turns natural language requests into full-depth security investigations. When a Wazuh alert digest arrives or a manual security review is needed, the **security-analyst** skill orchestrates a multi-phase assessment:
@@ -231,6 +267,7 @@ The skill is defined in `.opencode/skills/security-analyst/SKILL.md` and can be 
 homelab/
 ├── docker-compose.yml              # All 14 services
 ├── .env.sample                     # Environment template (copy to .env)
+├── .gitattributes                  # git-crypt encryption patterns
 ├── .gitignore
 ├── .opencode/
 │   └── skills/
@@ -269,7 +306,7 @@ homelab/
 │       ├── integrations/
 │       │   └── custom-n8n          # Alert -> n8n webhook script
 │       ├── rules/
-│       │   └── local_rules.xml     # Custom suppression rules
+│       │   └── local_rules.xml     # Custom suppression rules (git-crypt encrypted)
 │       ├── certs/                  # TLS certificates (gitignored)
 │       ├── indexer/
 │       │   ├── opensearch.yml
@@ -291,6 +328,7 @@ homelab/
 ### Prerequisites
 - Docker and Docker Compose
 - [OpenTofu](https://opentofu.org/) or Terraform
+- [git-crypt](https://github.com/AGWA/git-crypt) (for decrypting sensitive config files)
 - A Cloudflare account with a domain
 - (Optional) Google Gemini API key for AI-powered alert triage
 - (Optional) SMTP credentials for email notifications
@@ -301,6 +339,9 @@ homelab/
 ```bash
 git clone https://github.com/danielpsf/homelab.git
 cd homelab
+
+# Decrypt sensitive config files (see "Encrypted Files" section for key recovery)
+git-crypt unlock /path/to/homelab-git-crypt-key
 
 # Docker environment
 cp .env.sample .env
