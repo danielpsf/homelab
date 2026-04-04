@@ -59,30 +59,33 @@ Use the outputs to build your understanding of:
 
 ### Known Infrastructure Facts
 
-- **Ingress**: Cloudflare Tunnel (cloudflared) — no ports exposed to the internet except Wazuh agent enrollment (1514/1515) and API (55000) on the LAN
-- **Access control**: Cloudflare Zero Trust with email OTP on all public-facing services except Gotify (push notifications)
-- **Container hardening**: All containers run with `no-new-privileges: true` and `cap_drop: ALL` (capabilities added back selectively where needed)
+These are architectural patterns to be aware of — discover the specifics (service names, ports, policies) during Infrastructure Discovery:
+
+- **Ingress**: Traffic enters through a tunnel proxy container. Discover which container and what ports are exposed by checking `docker ps` and `ss -tulnp`.
+- **Access control**: Public-facing services may be behind an identity-aware proxy or zero-trust policy. Discover the access model by examining Terraform files (if present) or the tunnel configuration.
+- **Container hardening**: Containers may have security options applied. Discover them via `docker inspect --format '{{.Name}} CapDrop={{.HostConfig.CapDrop}} CapAdd={{.HostConfig.CapAdd}} SecurityOpt={{.HostConfig.SecurityOpt}}' $(docker ps -q)`.
 
 ### Container Inventory
 
 Do NOT rely on a hardcoded container list. Discover the running containers during Infrastructure Discovery using `docker ps`. Cross-reference with the `docker-compose.yml` in the homelab repo to understand each container's purpose and expected behavior.
 
-### Key File Locations
+### Project File Locations
 
+Do NOT assume absolute paths. Discover the project root by looking for the `docker-compose.yml` file in the current working directory or the user's project directory. Key files to locate:
+
+```bash
+# Find the project root (contains docker-compose.yml)
+# Then explore the structure from there:
+ls -la           # docker-compose.yml, .env, files/, terraform/
+ls -la files/    # Service configuration directories
+ls -la terraform/ # Infrastructure as code (if present)
 ```
 
-├── docker-compose.yml          # All container definitions
-├── .env                        # Secrets and environment variables (NEVER read or commit)
-├── files/
-│   └── wazuh/
-│       ├── ossec.conf          # Wazuh manager configuration
-│       └── integrations/       # Custom Wazuh integrations (n8n webhook, etc.)
-└── terraform/                  # Cloudflare infrastructure as code
-    ├── main.tf
-    ├── dns.tf
-    ├── tunnel.tf
-    └── zero-trust.tf
-```
+Expect to find:
+- `docker-compose.yml` — All container definitions
+- `.env` — Secrets and environment variables (**NEVER read or display**)
+- `files/` — Service-specific configuration (Wazuh ossec.conf, integrations, etc.)
+- `terraform/` — Infrastructure as code (DNS, tunnel, access policies)
 
 ## Wazuh Knowledge Base
 
@@ -256,8 +259,8 @@ sudo iptables -L -n -v
 ss -tnp | grep SUSPICIOUS_IP
 # DNS lookups for suspicious domains
 dig SUSPICIOUS_DOMAIN
-# Check Cloudflare tunnel status
-docker logs cloudflared --since 1h
+# Check tunnel/proxy container logs (discover the container name from docker ps)
+docker logs --since 1h TUNNEL_CONTAINER
 ```
 
 ### Step 5: Determine Verdicts
@@ -284,7 +287,12 @@ Each investigation subagent proposes concrete fixes for its findings. Every fix 
 </rule>
 ```
 
-The file to edit is `files/wazuh/ossec.conf` in the homelab repo. After changes, restart the Wazuh manager:
+The Wazuh manager configuration file (`ossec.conf`) is typically found under the `files/wazuh/` directory in the project root. Discover its exact location:
+```bash
+find . -name "ossec.conf" -type f 2>/dev/null
+```
+
+After changes, restart the Wazuh manager container:
 ```bash
 docker restart wazuh-manager
 ```
@@ -295,8 +303,8 @@ Propose changes to `docker-compose.yml`. Always show the diff — what to change
 **For host hardening issues:**
 Propose specific commands (iptables rules, sshd_config changes, package updates, etc.). Always explain what the command does and what the risk is if it is NOT applied.
 
-**For Cloudflare/network issues:**
-Propose Terraform changes to `terraform/` files or Cloudflare dashboard WAF rules. Prefer Terraform for reproducibility.
+**For network/ingress issues:**
+If infrastructure-as-code files exist (e.g., `terraform/` directory), propose changes there for reproducibility. Otherwise, describe the manual configuration changes needed for the tunnel/proxy/DNS provider.
 
 ## Common False Positive Patterns
 
@@ -306,12 +314,12 @@ Recognize these and flag them as tuning candidates instead of threats:
 |---------|-------------|------------|
 | Docker healthcheck processes | Container healthchecks spawn short-lived processes that trigger process monitoring | Exclude healthcheck commands in syscheck config |
 | Systemd service restarts during `apt upgrade` | Package updates restart services, triggering multiple alerts | Correlate with dpkg alerts; if update-related, suppress |
-| Prometheus scrape targets | Prometheus HTTP requests to exporters trigger web access rules | Exclude Prometheus internal IPs from HTTP monitoring |
-| Cloudflare tunnel IPs in access logs | All legitimate traffic arrives via the tunnel, so Cloudflare IPs dominate logs | These are expected; only alert on non-Cloudflare source IPs reaching services |
-| n8n webhook executions | n8n workflow triggers generate internal HTTP activity | Exclude n8n container IP from web alert rules |
+| Metrics scraper targets | Internal HTTP scraping (e.g., Prometheus) to exporters triggers web access rules | Identify the scraper's container IP and exclude from HTTP monitoring |
+| Tunnel/proxy IPs in access logs | All legitimate traffic arrives via the ingress tunnel, so proxy IPs dominate logs | These are expected; only alert on IPs that bypass the tunnel reaching services |
+| Workflow automation webhooks | Internal workflow engines (e.g., n8n) generate HTTP activity via webhooks | Identify the automation container IP and exclude from web alert rules |
 | Wazuh self-monitoring | Wazuh's own processes (ossec-analysisd, ossec-remoted, etc.) trigger process monitoring | Exclude Wazuh processes from syscheck |
-| FIM alerts on log rotation | logrotate compresses and moves log files, triggering syscheck | Exclude `/var/log/*.gz` and rotated log paths from FIM |
-| SSH key-based auth from known IPs | Legitimate admin SSH sessions from the LAN | If source IP is on the LAN (192.168.x.x), lower severity or suppress |
+| FIM alerts on log rotation | logrotate compresses and moves log files, triggering syscheck | Exclude rotated/compressed log paths from FIM |
+| SSH key-based auth from known IPs | Legitimate admin SSH sessions from the LAN | If source IP is on the local network, lower severity or suppress |
 | Browser ephemeral port rotation | Desktop browsers (Zen, Arc, Chromium, Chrome, Firefox, etc.) open and close ephemeral UDP/TCP ports as part of normal operation (WebRTC, QUIC, DNS-over-HTTPS). Netstat monitoring detects port changes every few minutes. | Identify the process name (e.g., `zen`, `chrome`, `firefox`). If it maps to a known browser, this is expected. Suppress the specific rule for that process name. Still worth a quick `ps aux` check to confirm the PID belongs to the expected browser binary. |
 
 ## Output Format
@@ -381,5 +389,5 @@ docker restart wazuh-manager
 - **Correlate before investigating** — grouped alerts save time and give better context.
 - **Be specific in remediation** — "harden SSH" is useless. "Add `PermitRootLogin no` to `/etc/ssh/sshd_config` line 32" is useful.
 - **Explain risk** — for every remediation, state what happens if the user does NOT apply it.
-- **Preserve existing hardening** — this homelab already has significant hardening (Zero Trust, container caps, no exposed ports). Do not propose changes that weaken the existing posture.
+- **Preserve existing hardening** — discover the current security posture (container caps, network policies, access controls) before proposing changes. Do not propose changes that weaken the existing posture.
 - **Prioritize by exploitability** — a critical CVE on an internet-facing service matters more than a misconfiguration on an internal-only tool.
