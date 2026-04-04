@@ -1,0 +1,19 @@
+<!-- Local rules — custom overrides for homelab Wazuh deployment -->
+<!-- Copyright (C) 2015, Wazuh Inc. -->
+<!-- See: https://documentation.wazuh.com/current/user-manual/ruleset/custom.html -->
+
+<!-- Suppress noisy netstat alerts from known desktop browsers -->
+<group name="local,syslog,">
+
+  <!-- Suppress Rule 533 (netstat port changed) for Zen Browser.
+       Zen Browser (Firefox/Gecko fork) rotates ephemeral UDP ports for
+       WebRTC/QUIC/DNS-over-HTTPS. Triggers Rule 533 every netstat scan
+       cycle (~6 min), producing ~240 false positive alerts per day.
+       Ref: Security assessment 2026-04-04, alerts 2/3/5. -->
+  <rule id="100010" level="0">
+    <if_sid>533</if_sid>
+    <match>zen</match>
+    <description>Suppress netstat port change alerts for Zen Browser (expected ephemeral port rotation)</description>
+  </rule>
+
+</group>

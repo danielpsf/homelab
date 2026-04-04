@@ -391,6 +391,7 @@ services:
       - wazuh_var_multigroups:/var/ossec/var/multigroups
       - ./files/wazuh/ossec.conf:/wazuh-config-mount/etc/ossec.conf:ro
       - ./files/wazuh/integrations/custom-n8n:/wazuh-config-mount/integrations/custom-n8n:ro
+      - ./files/wazuh/rules/local_rules.xml:/wazuh-config-mount/etc/rules/local_rules.xml:ro
       - ./files/wazuh/certs/root-ca.pem:/etc/filebeat/certs/root-ca.pem:ro
       - ./files/wazuh/certs/wazuh.manager.pem:/etc/filebeat/certs/filebeat.pem:ro
       - ./files/wazuh/certs/wazuh.manager-key.pem:/etc/filebeat/certs/filebeat-key.pem:ro
