@@ -43,6 +43,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab" {
         }
       },
       {
+        hostname = "gotify.${var.domain}"
+        service  = "http://gotify:80"
+      },
+      {
         # catch-all rule (required by Cloudflare)
         service = "http_status:404"
       }

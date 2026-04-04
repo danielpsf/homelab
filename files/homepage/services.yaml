@@ -41,6 +41,17 @@
         description: PDF manipulation tools
         server: local
         container: stirling-pdf
+    - Gotify:
+        icon: gotify
+        href: "https://gotify.{{HOMEPAGE_VAR_DOMAIN}}"
+        description: Push notification server
+        server: local
+        container: gotify
+        widget:
+          type: gotify
+          url: "http://gotify:80"
+          key: "{{HOMEPAGE_VAR_GOTIFY_KEY}}"
+          fields: ["apps", "clients", "messages"]
 - Media:
     - Sonarr:
         icon: sonarr

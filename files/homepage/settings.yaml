@@ -8,7 +8,7 @@ layout:
     columns: 1
   Applications:
     style: row
-    columns: 4
+    columns: 5
   Media:
     style: row
     columns: 4
