@@ -28,32 +28,44 @@ Your job is to go deeper than the AI triage — correlate alerts, investigate on
 
 This is a single-host homelab. Understand the architecture before making any assessment.
 
-### Infrastructure
+### Infrastructure Discovery
 
-- **Host**: server running Ubuntu, Wazuh agent 001 ("my-server")
-- **Containers**: 13 Docker containers managed via docker-compose
+Before starting any investigation, you MUST discover the host environment. Do NOT assume the hardware, OS, or distribution. Run these commands to gather context:
+
+```bash
+# Host hardware and OS
+hostnamectl
+uname -a
+lsb_release -a 2>/dev/null || cat /etc/os-release
+nproc && free -h && df -h /
+
+# Container runtime
+docker --version
+docker compose version
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" | sort
+
+# Wazuh agent identity
+docker exec wazuh-manager /var/ossec/bin/agent_control -l 2>/dev/null || true
+
+# Network posture
+ss -tulnp | head -40
+```
+
+Use the outputs to build your understanding of:
+- **Host**: Hardware model, OS and version, kernel, CPU/RAM/disk
+- **Containers**: How many are running, what images, what orchestrator
+- **Wazuh agent**: Agent name and ID for host alerts
+- **Network exposure**: What ports are listening and on which interfaces
+
+### Known Infrastructure Facts
+
 - **Ingress**: Cloudflare Tunnel (cloudflared) — no ports exposed to the internet except Wazuh agent enrollment (1514/1515) and API (55000) on the LAN
 - **Access control**: Cloudflare Zero Trust with email OTP on all public-facing services except Gotify (push notifications)
 - **Container hardening**: All containers run with `no-new-privileges: true` and `cap_drop: ALL` (capabilities added back selectively where needed)
 
 ### Container Inventory
 
-| Container | Purpose |
-|-----------|---------|
-| cloudflared | Cloudflare Tunnel daemon |
-| homepage | Dashboard |
-| portainer | Container management UI |
-| stirling-pdf | PDF tools |
-| n8n | Workflow automation (runs Wazuh alert pipeline) |
-| grafana | Monitoring dashboards |
-| prometheus | Metrics collection |
-| node-exporter | Host metrics |
-| blackbox-exporter | Endpoint probing |
-| speedtest-exporter | Internet speed metrics |
-| wazuh-indexer | Wazuh OpenSearch backend |
-| wazuh-manager | Wazuh SIEM/XDR server |
-| wazuh-dashboard | Wazuh UI |
-| gotify | Push notification server |
+Do NOT rely on a hardcoded container list. Discover the running containers during Infrastructure Discovery using `docker ps`. Cross-reference with the `docker-compose.yml` in the homelab repo to understand each container's purpose and expected behavior.
 
 ### Key File Locations
 
@@ -114,13 +126,40 @@ The decoder name in each alert tells you the log source:
 
 Follow these steps in order. Do NOT skip steps. Do NOT speculate without checking the system.
 
+### Orchestration Model
+
+This investigation MUST be orchestrated using the Task tool with subagents for maximum efficiency:
+
+**Phase 1 — Parse & Correlate (single general agent):**
+Launch ONE `general` subagent with the Task tool to read the digest report file and perform Steps 1-3 below. The agent must return:
+- A structured list of all alerts with extracted fields (rule ID, level, description, agent, timestamp, raw log, Gemini analysis)
+- Correlation groups (which alerts belong together and why)
+- Initial MITRE ATT&CK classification for each group
+- A prioritized list of investigation tasks needed for each group (specific commands to run)
+
+**Phase 2 — Live Investigation (parallel subagents per finding group):**
+For each correlated alert group identified in Phase 1, launch a SEPARATE `general` subagent in PARALLEL using the Task tool. Each subagent receives:
+- The alert details and correlation context for its assigned group
+- The specific investigation commands to run from Phase 1's output
+- The host/container environment context discovered during Infrastructure Discovery
+- Instructions to determine a verdict and propose remediation
+
+Each subagent must return:
+- Commands executed and their output (evidence)
+- Verdict: True Positive (Critical/Notable) or False Positive (Expected/Noisy) or Inconclusive
+- MITRE ATT&CK classification (confirmed or revised)
+- Proposed remediation with ready-to-execute commands or config changes
+
+**Phase 3 — Synthesize (you, the orchestrator):**
+After all subagents complete, YOU assemble the final Security Assessment Report by combining all subagent results into the Output Format defined below. Do NOT delegate report assembly to a subagent.
+
 ### Step 1: Parse the Report
 
 Read the entire markdown digest. For each alert, extract:
 
 - **Rule ID** and **rule level**
 - **Description** (what Wazuh detected)
-- **Agent** (should be 001/my-server for host alerts)
+- **Agent** (check the Wazuh agent identity discovered during Infrastructure Discovery)
 - **Timestamp** (check for time clustering — multiple alerts in seconds = possible attack chain)
 - **Gemini's analysis** (the AI triage included in the report)
 - **Raw log data** (the actual log line that triggered the alert)
@@ -162,7 +201,7 @@ For each alert or alert group, determine:
 
 ### Step 4: Live Investigation
 
-For each alert that is potentially actionable (not an obvious false positive), investigate on the system:
+For each alert that is potentially actionable (not an obvious false positive), investigate on the system. Each investigation subagent should use the commands appropriate for its alert type:
 
 **Host-level checks:**
 ```bash
@@ -223,7 +262,7 @@ docker logs cloudflared --since 1h
 
 ### Step 5: Determine Verdicts
 
-For each alert, assign one of these verdicts:
+Each investigation subagent assigns one of these verdicts to its alert group:
 
 - **True Positive — Critical**: Confirmed malicious activity requiring immediate action
 - **True Positive — Notable**: Confirmed security-relevant event, but low risk in this context
@@ -233,7 +272,7 @@ For each alert, assign one of these verdicts:
 
 ### Step 6: Propose Remediations
 
-For every finding, propose concrete fixes. Every fix must include ready-to-execute commands or config changes.
+Each investigation subagent proposes concrete fixes for its findings. Every fix must include ready-to-execute commands or config changes.
 
 **For Wazuh false positives (tune the rules):**
 ```xml
@@ -273,6 +312,7 @@ Recognize these and flag them as tuning candidates instead of threats:
 | Wazuh self-monitoring | Wazuh's own processes (ossec-analysisd, ossec-remoted, etc.) trigger process monitoring | Exclude Wazuh processes from syscheck |
 | FIM alerts on log rotation | logrotate compresses and moves log files, triggering syscheck | Exclude `/var/log/*.gz` and rotated log paths from FIM |
 | SSH key-based auth from known IPs | Legitimate admin SSH sessions from the LAN | If source IP is on the LAN (192.168.x.x), lower severity or suppress |
+| Browser ephemeral port rotation | Desktop browsers (Zen, Arc, Chromium, Chrome, Firefox, etc.) open and close ephemeral UDP/TCP ports as part of normal operation (WebRTC, QUIC, DNS-over-HTTPS). Netstat monitoring detects port changes every few minutes. | Identify the process name (e.g., `zen`, `chrome`, `firefox`). If it maps to a known browser, this is expected. Suppress the specific rule for that process name. Still worth a quick `ps aux` check to confirm the PID belongs to the expected browser binary. |
 
 ## Output Format
 
