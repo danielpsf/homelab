@@ -81,7 +81,7 @@ func main() {
 
 	cfg := map[string]string{}
 	for _, k := range []string{"CF_ACCESS_TEAM_DOMAIN", "CF_ACCESS_AUD", "PUBLIC_ORIGIN", "ADMIN_EMAIL", "SESSION_SECRET"} {
-		if cfg[k] = strings.TrimSpace(os.Getenv(k)); cfg[k] == "" {
+		if cfg[k] = secretEnv(k); cfg[k] == "" {
 			log.Fatalf("missing env %s", k)
 		}
 	}
@@ -106,14 +106,14 @@ func main() {
 		}
 		s.prune() // enforce at startup too, not only on the ticker
 	}
-	if sec := os.Getenv("TURNSTILE_SECRET"); sec != "" {
+	if sec := secretEnv("TURNSTILE_SECRET"); sec != "" {
 		s.captcha = &turnstile{secret: sec, verifyURL: "https://challenges.cloudflare.com/turnstile/v0/siteverify",
 			hostname: hostOf(s.origin), client: &http.Client{Timeout: 10 * time.Second}}
 	} else {
 		log.Print("TURNSTILE_SECRET not set: code requests will be rejected")
 	}
 	if m := (&smtpMailer{host: os.Getenv("SMTP_HOST"), port: os.Getenv("SMTP_PORT"), user: os.Getenv("SMTP_USER"),
-		pass: os.Getenv("SMTP_PASS"), from: os.Getenv("SMTP_FROM")}); m.host != "" && m.port != "" && m.from != "" && (m.user == "" || m.pass != "") {
+		pass: secretEnv("SMTP_PASS"), from: os.Getenv("SMTP_FROM")}); m.host != "" && m.port != "" && m.from != "" && (m.user == "" || m.pass != "") {
 		s.mail = m
 	} else {
 		log.Print("SMTP not configured: /api/otp/request answers 503 email_unavailable")
@@ -162,6 +162,18 @@ func newServer(db *sql.DB, team, aud, origin, admin, secret, webDir string) *ser
 		otpIPLimit:  newLimiter(10, time.Hour),
 		voteLimit:   newLimiter(5, time.Hour),
 	}
+}
+
+// secretEnv reads k from the file named by k_FILE (Docker secrets), falling back to the plain variable k.
+func secretEnv(k string) string {
+	if p := os.Getenv(k + "_FILE"); p != "" {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			log.Fatalf("%s_FILE: %v", k, err)
+		}
+		return strings.TrimSpace(string(b))
+	}
+	return strings.TrimSpace(os.Getenv(k))
 }
 
 func envOr(k, def string) string {

@@ -443,6 +443,19 @@ func TestSMTPErrClassHidesAddress(t *testing.T) {
 	}
 }
 
+func TestSecretEnv(t *testing.T) {
+	f := filepath.Join(t.TempDir(), "s")
+	os.WriteFile(f, []byte("from-file\n"), 0o600)
+	t.Setenv("TP_SECRET", "from-env")
+	if got := secretEnv("TP_SECRET"); got != "from-env" {
+		t.Fatalf("plain env fallback: %q", got)
+	}
+	t.Setenv("TP_SECRET_FILE", f)
+	if got := secretEnv("TP_SECRET"); got != "from-file" {
+		t.Fatalf("file wins: %q", got)
+	}
+}
+
 func TestEmailUnavailable(t *testing.T) {
 	e := newEnv(t)
 	e.s.mail = nil
