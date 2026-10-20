@@ -47,6 +47,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab" {
         service  = "http://gotify:80"
       },
       {
+        hostname = "tolon.${var.domain}"
+        service  = "http://tolon-poll:8080"
+      },
+      {
         # catch-all rule (required by Cloudflare)
         service = "http_status:404"
       }

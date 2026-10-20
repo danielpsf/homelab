@@ -7,6 +7,7 @@ locals {
     portainer = "portainer.${var.domain}"
     wazuh     = "wazuh.${var.domain}"
     gotify    = "gotify.${var.domain}"
+    tolon     = "tolon.${var.domain}"
   }
 }
 
