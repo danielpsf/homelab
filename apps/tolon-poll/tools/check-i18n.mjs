@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const web = path.resolve(process.argv[2] || path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "web"));
-const ALL = ["pt-BR", "de", "en-US", "es", "ar", "tr", "hi", "zh-CN", "ja"];
+const ALL = ["pt-BR", "de", "en-US", "es", "ar", "tr", "hi", "zh-CN", "ja", "he"];
 // Optional third argument: check en-US plus one locale only.
 const LOCALES = process.argv[3] ? ["en-US", process.argv[3]] : ALL;
 const PLURAL = /^results\.(votes|comments)\.(zero|one|two|few|many|other)$/;

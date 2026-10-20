@@ -12,19 +12,25 @@
 @font-face{font-family:"Noto Sans Devanagari";font-style:normal;font-weight:500;font-display:swap;src:url("/fonts/noto-sans-devanagari-devanagari-500-normal.woff2") format("woff2")}
 @font-face{font-family:"Noto Sans Devanagari";font-style:normal;font-weight:600;font-display:swap;src:url("/fonts/noto-sans-devanagari-devanagari-600-normal.woff2") format("woff2")}
 
+@font-face{font-family:"Noto Sans Hebrew";font-style:normal;font-weight:400;font-display:swap;src:url("/fonts/noto-sans-hebrew-hebrew-400-normal.woff2") format("woff2")}
+@font-face{font-family:"Noto Sans Hebrew";font-style:normal;font-weight:500;font-display:swap;src:url("/fonts/noto-sans-hebrew-hebrew-500-normal.woff2") format("woff2")}
+@font-face{font-family:"Noto Sans Hebrew";font-style:normal;font-weight:600;font-display:swap;src:url("/fonts/noto-sans-hebrew-hebrew-600-normal.woff2") format("woff2")}
+
 /* Script stacks: Inter first for Latin names, then the script font, then system fonts. CJK is never self-hosted. */
 :root{
   --ff-ar:"Noto Sans Arabic","Segoe UI","Geeza Pro",system-ui,sans-serif;
   --ff-hi:"Noto Sans Devanagari","Kohinoor Devanagari","Nirmala UI",system-ui,sans-serif;
   --ff-zh:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
   --ff-ja:"Hiragino Sans","Yu Gothic","Noto Sans CJK JP",system-ui,sans-serif;
+  --ff-he:"Noto Sans Hebrew","Arial Hebrew","Segoe UI",system-ui,sans-serif;
 }
 :root:lang(ar){--sm-font-sans:Inter,var(--ff-ar);--sm-font-display:"Inter Tight",Inter,var(--ff-ar)}
 :root:lang(hi){--sm-font-sans:Inter,var(--ff-hi);--sm-font-display:"Inter Tight",Inter,var(--ff-hi)}
 :root:lang(zh-CN){--sm-font-sans:Inter,var(--ff-zh);--sm-font-display:"Inter Tight",Inter,var(--ff-zh)}
 :root:lang(ja){--sm-font-sans:Inter,var(--ff-ja);--sm-font-display:"Inter Tight",Inter,var(--ff-ja)}
+:root:lang(he){--sm-font-sans:Inter,var(--ff-he);--sm-font-display:"Inter Tight",Inter,var(--ff-he)}
 /* Negative tracking breaks Arabic joining and crowds the other scripts; tall scripts need more line height. */
-:root:lang(ar) *,:root:lang(hi) *,:root:lang(zh-CN) *,:root:lang(ja) *{letter-spacing:normal!important}
+:root:lang(ar) *,:root:lang(he) *,:root:lang(hi) *,:root:lang(zh-CN) *,:root:lang(ja) *{letter-spacing:normal!important}
 :root:lang(ar) :is(h1,h2,h3,.sm-display-m),:root:lang(hi) :is(h1,h2,h3,.sm-display-m){line-height:1.35!important}
 :root:lang(zh-CN) :is(h1,h2,h3),:root:lang(ja) :is(h1,h2,h3){line-height:1.25!important}
 .sm-menu-list [lang="ar"]{font-family:Inter,var(--ff-ar)}

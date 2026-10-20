@@ -14,11 +14,12 @@
     { code: "hi", short: "HI", flag: "in", name: "हिन्दी", dir: "ltr" },
     { code: "zh-CN", short: "ZH-CN", flag: "cn", name: "简体中文", dir: "ltr" },
     { code: "ja", short: "JA", flag: "jp", name: "日本語", dir: "ltr" },
+    { code: "he", short: "HE", flag: "il", name: "עברית", dir: "rtl" },
   ];
   var FALLBACK = "en-US";
   var STORE = "tolon.lang";
   // Any pt-* is Brazilian Portuguese, any en-* is American English, any es-*, zh-* and so on map to the one shipped variant.
-  var BY_LANGUAGE = { pt: "pt-BR", en: "en-US", de: "de", es: "es", ar: "ar", tr: "tr", hi: "hi", zh: "zh-CN", ja: "ja" };
+  var BY_LANGUAGE = { pt: "pt-BR", en: "en-US", de: "de", es: "es", ar: "ar", tr: "tr", hi: "hi", zh: "zh-CN", ja: "ja", he: "he", iw: "he" };
 
 
   var root = document.documentElement;
