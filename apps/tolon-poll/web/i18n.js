@@ -21,6 +21,9 @@
   // Any pt-* is Brazilian Portuguese, any en-* is American English, any es-*, zh-* and so on map to the one shipped variant.
   var BY_LANGUAGE = { pt: "pt-BR", en: "en-US", de: "de", es: "es", ar: "ar", tr: "tr", hi: "hi", zh: "zh-CN", ja: "ja", he: "he", iw: "he" };
 
+  // The pages load this script as /i18n.js?v=<hash> (tools/stamp-assets.mjs); the same hash goes on the files fetched below.
+  var vq = "";
+  try { var sv = new URL(document.currentScript.src).searchParams.get("v"); if (sv) vq = "?v=" + sv; } catch (e) { /* unversioned */ }
 
   var root = document.documentElement;
   root.classList.add("i18n-pending");
@@ -104,7 +107,7 @@
   }
 
   function getJSON(url) {
-    return fetch(url, { headers: { Accept: "application/json" } }).then(function (r) {
+    return fetch(url + vq, { headers: { Accept: "application/json" } }).then(function (r) {
       if (!r.ok) throw new Error(url);
       return r.json();
     });
@@ -228,6 +231,7 @@
     locale: locale,
     locales: LOCALES,
     ready: ready,
+    vq: vq,
     t: t,
     node: node,
     apply: apply,
