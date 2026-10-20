@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/mail"
 	"net/smtp"
+	"net/textproto"
 	"net/url"
 	"regexp"
 	"strings"
@@ -119,7 +120,7 @@ func (m *smtpMailer) send(to, subject, body string) error {
 	defer c.Close()
 	if m.port != "465" {
 		if ok, _ := c.Extension("STARTTLS"); !ok {
-			return errors.New("smtp: server does not offer STARTTLS")
+			return errNoSTARTTLS
 		}
 		if err := c.StartTLS(tlsCfg); err != nil {
 			return err
@@ -155,6 +156,30 @@ func (m *smtpMailer) send(to, subject, body string) error {
 		return err
 	}
 	return c.Quit()
+}
+
+var errNoSTARTTLS = errors.New("smtp: server does not offer STARTTLS")
+
+// smtpErrClass describes a send failure without its text, which can echo the recipient address.
+func smtpErrClass(err error) string {
+	var tp *textproto.Error
+	var ne net.Error
+	var rec tls.RecordHeaderError
+	var cert *tls.CertificateVerificationError
+	switch {
+	case errors.Is(err, errNoSTARTTLS):
+		return "no STARTTLS offered"
+	case errors.As(err, &tp):
+		return fmt.Sprintf("smtp reply %d (class %dxx)", tp.Code, tp.Code/100)
+	case errors.As(err, &cert), errors.As(err, &rec):
+		return "tls error"
+	case errors.As(err, &ne) && ne.Timeout():
+		return "timeout"
+	case errors.As(err, &ne):
+		return "network error"
+	default:
+		return fmt.Sprintf("error %T", err)
+	}
 }
 
 // --- Handlers ----------------------------------------------------------------
@@ -208,7 +233,7 @@ func (s *server) handleOTPRequest(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		subject, body := codeEmail(req.Locale, code)
 		if err := s.mail.send(email, subject, body); err != nil {
-			log.Printf("otp mail %s: %v", s.logID(email), err)
+			log.Printf("otp mail %s: %s", s.logID(email), smtpErrClass(err))
 			return
 		}
 		log.Printf("otp sent %s", s.logID(email))

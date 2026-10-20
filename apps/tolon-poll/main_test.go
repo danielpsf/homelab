@@ -7,9 +7,12 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"net/textproto"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -423,6 +426,19 @@ func TestCodeEmailLocale(t *testing.T) {
 		subj := <-e.mail.subjects
 		if subj != tc.subject || !strings.HasPrefix(m[1], tc.body) || !codeRe.MatchString(m[1]) || strings.Contains(m[1], "http") {
 			t.Fatalf("%q: %q %q", tc.locale, subj, m[1])
+		}
+	}
+}
+
+func TestSMTPErrClassHidesAddress(t *testing.T) {
+	cases := map[error]string{
+		&textproto.Error{Code: 550, Msg: "5.1.1 <victim@example.test>: Recipient address rejected"}:         "smtp reply 550 (class 5xx)",
+		fmt.Errorf("rcpt: %w", &textproto.Error{Code: 452, Msg: "too many recipients victim@example.test"}): "smtp reply 452 (class 4xx)",
+		errors.New("smtp: victim@example.test refused"):                                                     "error *errors.errorString",
+	}
+	for err, want := range cases {
+		if got := smtpErrClass(err); got != want || strings.Contains(got, "@") {
+			t.Fatalf("smtpErrClass(%v) = %q want %q", err, got, want)
 		}
 	}
 }
