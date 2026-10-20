@@ -3,6 +3,19 @@
 (function () {
   "use strict";
   var MIN = 60000;
+  var qs = new URLSearchParams(window.location.search);
+  // Sample texts follow the language the UI is shown in (?lang=); the way back follows the page language (?sl=).
+  var SAMPLE = {
+    "pt-BR": { c1: "Trabalho", c2: "Time de plataforma", meeting: "Reunião semanal da plataforma" },
+    "en-US": { c1: "Work", c2: "Platform team", meeting: "Platform weekly sync" },
+  };
+  var BACK = {
+    "pt-BR": "Voltar para a prévia dos ícones", de: "Zurück zur Icon-Vorschau", "en-US": "Back to the icon preview",
+    es: "Volver a la vista previa de iconos", ar: "العودة إلى معاينة الأيقونات", tr: "Simge önizlemesine dön",
+    hi: "आइकन पूर्वावलोकन पर वापस जाएँ", "zh-CN": "返回图标预览", ja: "アイコンのプレビューに戻る",
+  };
+  var TEXT = SAMPLE[qs.get("lang")] || SAMPLE["en-US"];
+  var BACK_TEXT = BACK[qs.get("sl")] || BACK["en-US"];
   var t0 = Date.now();
   var callbacks = {};
   var listeners = {};
@@ -14,8 +27,8 @@
   }
 
   var calendars = [
-    { id: "cal-1", name: "Work", kind: "ics", enabled: true, display_url: "https://calendar.example.com", last_sync_at: iso(t0 - 2 * MIN), last_error: null },
-    { id: "cal-2", name: "Platform team", kind: "ics", enabled: true, display_url: "https://teams.example.org", last_sync_at: iso(t0 - 7 * MIN), last_error: null },
+    { id: "cal-1", name: TEXT.c1, kind: "ics", enabled: true, display_url: "https://calendar.example.com", last_sync_at: iso(t0 - 2 * MIN), last_error: null },
+    { id: "cal-2", name: TEXT.c2, kind: "ics", enabled: true, display_url: "https://teams.example.org", last_sync_at: iso(t0 - 7 * MIN), last_error: null },
   ];
 
   // The next whole minute, at least 30 s away, so the countdown reads "Starts in 1 min".
@@ -25,7 +38,7 @@
     meetings: [
       {
         key: "sample-1",
-        title: "Platform weekly sync",
+        title: TEXT.meeting,
         start: iso(start),
         end: iso(start + 45 * MIN),
         join: { kind: "link", host: "us02web.zoom.us", recognised: true },
@@ -44,12 +57,15 @@
     return Promise.reject({ code: code });
   }
 
-  var icon = new URLSearchParams(window.location.search).get("icon");
-  var back = "/preview/" + (icon ? "?icon=" + encodeURIComponent(icon) : "");
+  var icon = qs.get("icon");
+  var sl = qs.get("sl");
+  // Back to the shell: its own ?lang= is the page language (sl), not the UI language.
+  var extra = (icon ? "&icon=" + encodeURIComponent(icon) : "") + (sl ? "&lang=" + encodeURIComponent(sl) : "");
+  var back = "/preview/?" + extra.slice(1);
 
   // The real app closes its window; here the page returns to the preview and says what the press would do.
   function say(action) {
-    window.location.href = "/preview/?done=" + action + (icon ? "&icon=" + encodeURIComponent(icon) : "");
+    window.location.href = "/preview/?done=" + action + extra;
     return Promise.resolve();
   }
 
@@ -58,7 +74,7 @@
       var a = document.createElement("a");
       a.className = "sim-back";
       a.href = back;
-      a.textContent = "Back to the icon preview";
+      a.textContent = BACK_TEXT;
       document.body.appendChild(a);
     });
   }
