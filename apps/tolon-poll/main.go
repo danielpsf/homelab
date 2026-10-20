@@ -96,7 +96,7 @@ func main() {
 		log.Print("TURNSTILE_SECRET not set: code requests will be rejected")
 	}
 	if m := (&smtpMailer{host: os.Getenv("SMTP_HOST"), port: os.Getenv("SMTP_PORT"), user: os.Getenv("SMTP_USER"),
-		pass: os.Getenv("SMTP_PASS"), from: os.Getenv("SMTP_FROM")}); m.host != "" && m.port != "" && m.from != "" {
+		pass: os.Getenv("SMTP_PASS"), from: os.Getenv("SMTP_FROM")}); m.host != "" && m.port != "" && m.from != "" && (m.user == "" || m.pass != "") {
 		s.mail = m
 	} else {
 		log.Print("SMTP not configured: /api/otp/request answers 503 email_unavailable")
@@ -211,6 +211,7 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /pool", func(w http.ResponseWriter, r *http.Request) { s.serveFile(w, r, "pool.html") })
 	mux.HandleFunc("GET /pool/results", s.adminOnly(func(w http.ResponseWriter, r *http.Request) { s.serveFile(w, r, "results.html") }))
 	mux.HandleFunc("GET /results.html", http.NotFound) // only via /pool/results, which Access guards
+	mux.HandleFunc("GET /results", http.NotFound)
 	mux.Handle("GET /", s.static())
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -333,9 +334,11 @@ func (s *server) loadOptions() ([]json.RawMessage, map[string]bool, error) {
 }
 
 func (s *server) handleMe(w http.ResponseWriter, r *http.Request) {
+	jwtEmail, err := s.auth.verify(tokenFrom(r))
+	isAdmin := err == nil && jwtEmail == s.admin
 	email := s.sessionEmail(r)
 	if email == "" {
-		writeJSON(w, http.StatusOK, map[string]any{"email": nil, "voted": false, "is_admin": false})
+		writeJSON(w, http.StatusOK, map[string]any{"email": nil, "voted": false, "is_admin": isAdmin})
 		return
 	}
 	var voted bool
@@ -343,7 +346,7 @@ func (s *server) handleMe(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, errBody("internal"))
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"email": email, "voted": voted, "is_admin": false})
+	writeJSON(w, http.StatusOK, map[string]any{"email": email, "voted": voted, "is_admin": isAdmin})
 }
 
 func (s *server) handleOptions(w http.ResponseWriter, r *http.Request) {
@@ -458,9 +461,9 @@ func (s *server) handleResults(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 	type comment struct {
-		Email     string `json:"email"`
-		Comment   string `json:"comment"`
-		CreatedAt string `json:"created_at"`
+		Email   string `json:"email"`
+		Comment string `json:"comment"`
+		At      string `json:"at"`
 	}
 	favs := map[string]int{}
 	reacts := map[string]map[string]int{}

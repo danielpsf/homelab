@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"net"
 	"net/http"
+	"net/mail"
 	"net/smtp"
 	"net/url"
 	"regexp"
@@ -126,7 +127,11 @@ func (m *smtpMailer) send(to, subject, body string) error {
 			return err
 		}
 	}
-	if err := c.Mail(m.from); err != nil {
+	from, err := mail.ParseAddress(m.from) // SMTP_FROM may carry a display name
+	if err != nil {
+		return err
+	}
+	if err := c.Mail(from.Address); err != nil {
 		return err
 	}
 	if err := c.Rcpt(to); err != nil {
@@ -136,7 +141,7 @@ func (m *smtpMailer) send(to, subject, body string) error {
 	if err != nil {
 		return err
 	}
-	msg := "From: " + m.from + "\r\nTo: " + to + "\r\nSubject: " + subject +
+	msg := "From: " + from.String() + "\r\nTo: " + to + "\r\nSubject: " + subject +
 		"\r\nDate: " + time.Now().UTC().Format(time.RFC1123Z) +
 		"\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n" +
 		strings.ReplaceAll(body, "\n", "\r\n")

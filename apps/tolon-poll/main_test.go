@@ -479,8 +479,20 @@ func TestAdminJWT(t *testing.T) {
 	if rec := e.do("GET", "/api/results", "", nil, e.login(testAdmin)); rec.Code != 401 {
 		t.Fatalf("session as admin: %d", rec.Code)
 	}
-	if rec := e.do("GET", "/results.html", "", nil); rec.Code != 404 {
-		t.Fatalf("results.html direct: %d", rec.Code)
+	for _, p := range []string{"/results.html", "/results"} {
+		if rec := e.do("GET", p, "", nil); rec.Code != 404 {
+			t.Fatalf("%s direct: %d", p, rec.Code)
+		}
+	}
+	// is_admin only with a valid admin Access JWT
+	var me map[string]any
+	json.Unmarshal(e.do("GET", "/api/me", "", map[string]string{"Cf-Access-Jwt-Assertion": e.tok(testAdmin, nil)}).Body.Bytes(), &me)
+	if me["is_admin"] != true {
+		t.Fatalf("admin JWT on /api/me: %v", me)
+	}
+	json.Unmarshal(e.do("GET", "/api/me", "", map[string]string{"Cf-Access-Jwt-Assertion": e.tok("x@example.test", nil)}).Body.Bytes(), &me)
+	if me["is_admin"] != false {
+		t.Fatalf("non-admin JWT on /api/me: %v", me)
 	}
 	// results content
 	e.s.db.Exec(`INSERT INTO votes (email, favourite, reactions, comment, created_at) VALUES ('v@x.test','lon','{"tol":"no"}','hi','2026-01-01T00:00:00Z')`)
@@ -491,7 +503,7 @@ func TestAdminJWT(t *testing.T) {
 		Comments   []map[string]string
 	}
 	json.Unmarshal(e.do("GET", "/api/results", "", map[string]string{"Cf-Access-Jwt-Assertion": e.tok(testAdmin, nil)}).Body.Bytes(), &res)
-	if res.Total != 1 || res.Favourites["lon"] != 1 || res.Reactions["tol"]["no"] != 1 || res.Comments[0]["email"] != "v@x.test" {
+	if res.Total != 1 || res.Favourites["lon"] != 1 || res.Reactions["tol"]["no"] != 1 || res.Comments[0]["email"] != "v@x.test" || res.Comments[0]["at"] != "2026-01-01T00:00:00Z" {
 		t.Fatalf("results: %+v", res)
 	}
 }
