@@ -424,6 +424,7 @@ func TestNormaliseLocale(t *testing.T) {
 		"en-GB": "en-US", "en": "en-US", "zh-TW": "zh-CN", "zh-Hans-CN": "zh-CN", "es-MX": "es",
 		"de": "de", "ar": "ar", "tr": "tr", "hi": "hi", "ja": "ja", "ZH-cn": "zh-CN",
 		"fr-FR": "en-US", "": "en-US", "xx": "en-US", "-": "en-US",
+		"de-AT": "de", "ar-EG": "ar", "ja-JP": "ja", "tr-TR": "tr", "hi-IN": "hi", "de_CH": "de",
 	} {
 		if got := normaliseLocale(in); got != want {
 			t.Fatalf("normaliseLocale(%q) = %q want %q", in, got, want)
@@ -456,7 +457,8 @@ func TestEmailTextFallback(t *testing.T) {
 	for _, tc := range []struct{ locale, subject, body string }{
 		{"ja", "Tolon 投票コード", "コードは 123456 です。10 分で失効します。\n"},
 		{"de", "Dein Tolon-Code", "Code 123456, 10 min.\n"},   // body key missing: en-US body
-		{"tr-TR", "Code for Tolon", "Code 123456, 10 min.\n"}, // unknown locale: en-US
+		{"tr-TR", "Tolon kodunuz", "Kodunuz 123456.\n"},       // tr-* maps to tr
+		{"fr-FR", "Code for Tolon", "Code 123456, 10 min.\n"}, // unknown locale: en-US
 		{"tr", "Tolon kodunuz", "Kodunuz 123456.\n"},          // flat keys
 		{"es-AR", "Code for Tolon", "Code 123456, 10 min.\n"}, // invalid file: en-US
 		{"hi", "Code for Tolon", "Code 123456, 10 min.\n"},    // missing file: en-US
