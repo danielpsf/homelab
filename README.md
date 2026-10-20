@@ -1,6 +1,6 @@
 # Homelab
 
-A single Docker Compose stack running 14 containers with Terraform-managed Cloudflare infrastructure. Everything is Infrastructure as Code — no manual configuration, no secrets in version control.
+A single Docker Compose stack running 15 containers with Terraform-managed Cloudflare infrastructure. Everything is Infrastructure as Code — no manual configuration, no secrets in version control.
 
 ## Architecture
 
@@ -19,6 +19,8 @@ graph TB
         Radarr[Radarr]
         Jellyfin[Jellyfin]
         Deluge[Deluge]
+        Resend[Resend<br/>SMTP]
+        Turnstile[Cloudflare<br/>Turnstile]
     end
 
     subgraph Docker Host
@@ -31,6 +33,7 @@ graph TB
             SPDF[Stirling PDF]
             WD[Wazuh Dashboard]
             GOT[Gotify]
+            TP[Tolon Poll]
         end
 
         subgraph monitoring[Monitoring Network]
@@ -49,7 +52,10 @@ graph TB
     end
 
     CF --> ZT --> CFD
-    CFD --> HP & GF & N8N & PORT & SPDF & WD & GOT
+    CF -.->|voting paths, no Access| CFD
+    CFD --> HP & GF & N8N & PORT & SPDF & WD & GOT & TP
+    TP -->|one-time codes| Resend
+    TP -.->|verify token| Turnstile
     HP -.->|widgets| GF & PORT & GOT & Sonarr & Radarr & Jellyfin & Deluge & CFD
     GF --> PROM
     PROM --> NE & BE & SE & N8N
@@ -76,6 +82,7 @@ graph LR
         wazuh-dashboard
         blackbox-exporter
         gotify
+        tolon-poll
     end
 
     subgraph monitoring[monitoring network]
@@ -148,27 +155,56 @@ graph TD
         TUNNEL[Zero Trust Tunnel]
         DNS[DNS CNAME Records]
         ACCESS[Access Applications<br/>+ OTP Policies]
+        TURN[Turnstile Widget]
+        WAF[Rate Limiting Rules]
     end
 
     subgraph Managed Resources
         R1[cloudflare_zero_trust_tunnel_cloudflared]
         R2[cloudflare_zero_trust_tunnel_cloudflared_config]
-        R3["cloudflare_dns_record (x7)"]
-        R4["cloudflare_zero_trust_access_application (x6)"]
+        R3["cloudflare_dns_record (x8)"]
+        R4["cloudflare_zero_trust_access_application (x7)"]
+        R5["cloudflare_dns_record resend (one per record)"]
+        R6["cloudflare_turnstile_widget (opt-in)"]
+        R7["cloudflare_ruleset http_ratelimit (opt-in)"]
     end
 
     R1 --> TUNNEL
     R2 --> TUNNEL
     R3 --> DNS
     R4 --> ACCESS
+    R5 --> DNS
+    R6 --> TURN
+    R7 --> WAF
 
     DNS -->|CNAME| TUNNEL
     ACCESS -->|protects| TUNNEL
 ```
 
-Terraform manages ~16 resources: the tunnel, its ingress config, 7 DNS records, and 6 Zero Trust access policies. All services except Gotify require email OTP authentication before reaching the application. Gotify uses token-based authentication only (the Android app cannot handle Cloudflare Access OTP).
+Terraform manages 18 always-on resources: the random tunnel secret, the tunnel, its ingress config, 8 DNS records, and 7 Zero Trust access apps. Six of the apps cover whole hostnames and require email OTP before reaching the application. Gotify uses token-based authentication only (the Android app cannot handle Cloudflare Access OTP).
 
-The Tolon poll is public as well: voters confirm their email with one-time codes that the app sends itself (the free Zero Trust plan caps Access at 50 seats). Only its results paths have a path-scoped Access app, and the app verifies the Access JWT on them.
+The Tolon poll is public: voters confirm their email with one-time codes that the app sends itself (the free Zero Trust plan caps Access at 50 seats). The seventh app, `tolon_admin`, is scoped to the two results paths only (`/pool/results` and `/api/results`), and the app also verifies the Access JWT on them. The same admin-email OTP policy applies.
+
+Three more groups of resources are conditional:
+
+| File | Resource | Switch | API token permission |
+|------|----------|--------|----------------------|
+| `resend.tf` | DNS records for the Resend sending domain (DKIM, SPF, MX, the `rsend` tracking CNAME, DMARC with `p=none`), one per entry in `resend_dns_records` | The map is gitignored in `terraform.tfvars`; empty means none | Zone > DNS > Edit |
+| `turnstile.tf` | Turnstile widget for the code form | `enable_tolon_turnstile = true` | Account > Turnstile > Edit |
+| `ratelimit.tf` | `http_ratelimit` ruleset: 20 requests per 10 s per IP and colo on the poll host, block for 10 s (the free plan allows one rule) | `enable_tolon_rate_limit = true` | Zone > Zone WAF > Edit |
+
+The Turnstile widget and the rate limit are pending: the current API token does not have those two permissions yet, so both switches are off. Until the widget exists, `TURNSTILE_SITEKEY` and `TURNSTILE_SECRET` stay unset and code requests fail. The runbook in [`apps/tolon-poll/README.md`](apps/tolon-poll/README.md) has the steps.
+
+### Running OpenTofu
+
+The state was written by OpenTofu 1.11, so run that version through Docker rather than a locally installed binary:
+
+```bash
+alias tofu='docker run --rm -it -v "$PWD/terraform":/work -w /work ghcr.io/opentofu/opentofu:1.11'
+tofu plan -target=cloudflare_dns_record.tunnel -target=cloudflare_zero_trust_tunnel_cloudflared_config.homelab
+```
+
+Applies are targeted. The Grafana Access app has drift: an `allow-mcp` policy was created outside Terraform, and a full apply would try to revert it. Always pass `-target` for the resources you mean to change, and read the plan before applying. Back up `terraform.tfstate` first (the `pre-*.tfstate` files in `terraform/` are such copies, and are gitignored).
 
 ## Services
 
@@ -197,6 +233,8 @@ Every public service is protected by two layers:
 1. **Cloudflare Zero Trust** — email OTP gate before any traffic reaches the server
 2. **Application-level login** — each service has its own credentials
 
+**Exception, Tolon poll voters:** the poll host `tolon.<domain>` has no Access gate in front of the voting paths, because the free Zero Trust plan caps Access at 50 seats. Voters prove their email with a one-time code, protected by Cloudflare Turnstile, per-IP and per-email rate limits, and a Cloudflare edge rate limit. Only the results paths sit behind Access. See [`apps/tolon-poll/README.md`](apps/tolon-poll/README.md).
+
 **Exception:** Gotify is protected by Cloudflare Tunnel (no exposed ports) + WAF/DDoS protection + its built-in token authentication, but does **not** have a Cloudflare Access policy. The Gotify Android app makes direct HTTP/WebSocket calls and cannot handle the email OTP flow. Registration is disabled (`GOTIFY_REGISTRATION=false`).
 
 ### Container Hardening
@@ -212,6 +250,7 @@ All containers follow a hardened baseline:
 - **Homepage**: Uses `{{HOMEPAGE_VAR_*}}` template syntax — credentials injected via environment variables at runtime.
 - **Portainer**: Admin password stored as a Docker secret (`./secrets/`).
 - **Wazuh**: TLS certificates in `files/wazuh/certs/` (gitignored).
+- **Tolon poll**: the Resend SMTP key (`SMTP_PASS`, a send-only key), the session HMAC secret and the Turnstile secret live in `.env`. The poll database is under `data/` (gitignored). The Resend DNS records are in `resend_dns_records` in `terraform.tfvars` (gitignored).
 
 ### Encrypted Files (git-crypt)
 
@@ -268,7 +307,7 @@ The skill is defined in `.opencode/skills/security-analyst/SKILL.md` and can be 
 
 ```
 homelab/
-├── docker-compose.yml              # All 14 services
+├── docker-compose.yml              # All 15 services
 ├── .env.sample                     # Environment template (copy to .env)
 ├── .gitattributes                  # git-crypt encryption patterns
 ├── .gitignore
@@ -283,6 +322,11 @@ homelab/
 │       └── scans/                  # Trivy and CVE scan results
 ├── apps/
 │   └── tolon-poll/                 # Go service for the Tolon icon poll (see its README)
+│       ├── *.go, Dockerfile        # Server, distroless image
+│       ├── web/                    # Landing page, /pool, /pool/results, /preview/
+│       └── preview-build/          # build.sh: browser build of the real Tolon UI
+├── data/                           # Runtime data (gitignored)
+│   └── tolon-poll/                 # SQLite database (poll.db)
 ├── secrets/                        # Docker secrets (gitignored contents)
 ├── files/
 │   ├── grafana/
@@ -321,7 +365,10 @@ homelab/
 └── terraform/
     ├── main.tf                     # Tunnel + ingress config
     ├── dns.tf                      # CNAME records
-    ├── access.tf                   # Zero Trust access policies
+    ├── access.tf                   # Zero Trust access policies (incl. tolon_admin)
+    ├── resend.tf                   # Resend sending-domain DNS records
+    ├── turnstile.tf                # Opt-in Turnstile widget
+    ├── ratelimit.tf                # Opt-in edge rate limit
     ├── variables.tf
     ├── outputs.tf
     ├── versions.tf
@@ -338,6 +385,7 @@ homelab/
 - (Optional) Google Gemini API key for AI-powered alert triage
 - (Optional) SMTP credentials for email notifications
 - (Optional) Gotify Android/iOS app for push notifications
+- (Optional) A Resend account with a verified sending domain, for the Tolon poll emails
 
 ### 1. Clone and configure
 
@@ -379,7 +427,7 @@ docker run --rm httpd:2-alpine htpasswd -nbB admin 'YourPassword' | cut -d: -f2 
 # Initialize and apply Terraform
 cd terraform
 tofu init    # or: terraform init
-tofu apply   # or: terraform apply
+tofu apply   # or: terraform apply (see "Running OpenTofu" for targeted applies)
 
 # Copy the tunnel token from output to .env (CLOUDFLARE_TUNNEL_TOKEN)
 cd ..
@@ -407,7 +455,11 @@ docker compose up -d
 5. Update placeholder values: `YOUR_DATA_TABLE_ID`, `YOUR_GEMINI_CREDENTIAL_ID`, `YOUR_SMTP_CREDENTIAL_ID`, `YOUR_GOTIFY_APP_TOKEN`, and the email addresses
 6. Activate the workflow
 
-### 8. Install Wazuh agent (optional)
+### 8. Set up the Tolon poll (optional)
+
+Fill the "Tolon Poll" block in `.env`, set `resend_dns_records` in `terraform/terraform.tfvars`, and follow the setup and runbook in [`apps/tolon-poll/README.md`](apps/tolon-poll/README.md).
+
+### 9. Install Wazuh agent (optional)
 
 Install the Wazuh agent on the host to monitor the system itself:
 
