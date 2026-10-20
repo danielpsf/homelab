@@ -409,6 +409,9 @@ func (s *server) handleLogout(w http.ResponseWriter, r *http.Request) {
 func (s *server) closed() bool { return !s.closeAt.IsZero() && s.now().After(s.closeAt) }
 
 func (s *server) prune() {
+	for _, l := range []*limiter{s.hostLimit, s.apiLimit, s.otpIPLimit, s.voteLimit} {
+		l.evict()
+	}
 	if s.closed() {
 		for _, t := range []string{"votes", "sessions", "otp_codes", "otp_sends", "otp_burns", "otp_lockouts"} {
 			if _, err := s.db.Exec(`DELETE FROM ` + t); err != nil {

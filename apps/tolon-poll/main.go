@@ -554,6 +554,18 @@ type bucket struct {
 	last   time.Time
 }
 
+// evict drops buckets that have refilled completely, so memory stays bounded. Called from the prune ticker.
+func (l *limiter) evict() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	now := l.now()
+	for k, b := range l.buckets {
+		if b.tokens+now.Sub(b.last).Seconds()*l.rate >= l.burst {
+			delete(l.buckets, k)
+		}
+	}
+}
+
 func newLimiter(burst int, per time.Duration) *limiter {
 	return &limiter{burst: float64(burst), rate: float64(burst) / per.Seconds(), buckets: map[string]*bucket{}, now: time.Now}
 }
@@ -562,13 +574,6 @@ func (l *limiter) allow(key string) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	now := l.now()
-	if len(l.buckets) > 10000 { // drop refilled buckets so memory stays bounded
-		for k, b := range l.buckets {
-			if b.tokens+now.Sub(b.last).Seconds()*l.rate >= l.burst {
-				delete(l.buckets, k)
-			}
-		}
-	}
 	b, ok := l.buckets[key]
 	if !ok {
 		b = &bucket{tokens: l.burst, last: now}

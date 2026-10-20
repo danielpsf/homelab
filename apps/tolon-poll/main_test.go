@@ -657,6 +657,17 @@ func TestRateLimit(t *testing.T) {
 	if !l.allow("k") {
 		t.Fatal("no refill")
 	}
+	l.allow("other")
+	now = now.Add(30 * time.Second) // both buckets half refilled
+	l.evict()
+	if _, ok := l.buckets["k"]; !ok {
+		t.Fatal("evicted a bucket that is still draining")
+	}
+	now = now.Add(time.Minute)
+	l.evict()
+	if len(l.buckets) != 0 {
+		t.Fatalf("%d refilled buckets kept", len(l.buckets))
+	}
 }
 
 func TestRetention(t *testing.T) {
