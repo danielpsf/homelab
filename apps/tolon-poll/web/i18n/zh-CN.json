@@ -152,5 +152,5 @@
  "pv.msg.already_there": "已点击“I am already there”。在真实应用中，这会把会议标记为已出席，并关闭提醒。",
  "email.subject": "你的Tolon投票验证码：{code}",
  "email.body": "你的Tolon图标投票验证码是{code}，有效期为{minutes}分钟。如果这不是你本人申请的，可以直接忽略这封邮件。",
- "pv.appNote": "在下一个Tolon版本发布前，应用界面仍是英文，本页面使用的语言是{language}。"
+ "common.backHome": "返回首页"
 }

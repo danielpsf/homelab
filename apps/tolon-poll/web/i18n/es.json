@@ -156,5 +156,5 @@
  "pv.msg.already_there": "Has pulsado «I am already there». En la app real, esto registra tu asistencia a la reunión y cierra el recordatorio.",
  "email.subject": "Tu código para la votación de Tolon: {code}",
  "email.body": "Tu código para la votación del icono de Tolon es {code}. Caduca en {minutes} minutos. Si no lo has pedido, puedes ignorar este correo.",
- "pv.appNote": "Las pantallas de la app están en inglés hasta la próxima versión de Tolon; esta página está en {language}."
+ "common.backHome": "Volver al inicio"
 }

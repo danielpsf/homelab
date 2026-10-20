@@ -154,5 +154,5 @@
  "pv.msg.already_there": "Already there düğmesine basıldı. Gerçek uygulamada bu, toplantıyı katıldı olarak işaretler ve hatırlatmayı kapatır.",
  "email.subject": "Tolon oylama kodun: {code}",
  "email.body": "Tolon simge oylaması için kodun {code}. Kod {minutes} dakika içinde geçerliliğini yitirir. Kodu sen istemediysen bu e-postayı yok sayabilirsin.",
- "pv.appNote": "Uygulama ekranları bir sonraki Tolon sürümüne kadar İngilizce. Bu sayfa şu dilde: {language}."
+ "common.backHome": "Başa dön"
 }

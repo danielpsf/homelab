@@ -41,7 +41,8 @@
 .page{width:100%;max-width:1040px;margin:0 auto;padding:0 16px 64px}
 .top{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;padding:20px 0 0}
 .top .brand{margin-inline-end:auto}
-.brand{font-family:var(--sm-font-display);font-weight:600;font-size:20px;letter-spacing:-.02em;text-decoration:none}
+.brand{font-family:var(--sm-font-display);font-weight:600;font-size:20px;letter-spacing:-.02em;text-decoration:none;color:inherit;border-radius:var(--sm-radius-s)}
+.brand:hover{color:var(--sm-moss)}
 .who{margin:0;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;font-size:14px;color:var(--sm-muted);overflow-wrap:anywhere}
 .linkbtn{display:inline;padding:2px 0;border:0;background:none;font:inherit;color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer;border-radius:4px}
 .linkbtn:hover{color:var(--sm-moss)}
@@ -59,7 +60,7 @@
 .who strong{color:var(--sm-ink);font-weight:600}
 
 .hero{padding:40px 0 8px;max-width:760px}
-.hero h1{font-family:var(--sm-font-display);font-size:clamp(32px,6vw,52px);line-height:1.05;font-weight:600;letter-spacing:-.035em;margin:0 0 20px}
+.hero h1{font-family:var(--sm-font-display);font-size:clamp(32px,6vw,52px);line-height:1.15;font-weight:600;letter-spacing:-.035em;margin:0 0 20px}
 .hero p{margin:0 0 14px;font-size:17px;line-height:1.55}
 .hero .links{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
 .hero .privacy{margin:28px 0 0;font-size:14px;padding:16px 18px;border:1px solid var(--sm-line);border-radius:var(--sm-radius-m);background:var(--sm-card);font-size:14px;line-height:1.5;max-width:760px}

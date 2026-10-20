@@ -14,7 +14,7 @@
   <a class="skip" href="#poll" data-i18n="common.skipPoll">Skip to the poll</a>
   <div class="page">
     <div class="top">
-      <span class="brand">Tolon</span>
+      <a class="brand" href="/" data-home>Tolon</a>
       <p class="who" id="who" hidden><span id="who-text"></span> <button type="button" class="linkbtn" id="signout" data-i18n="pool.signOut">Sign out</button></p>
       <a class="sm-btn quiet sm" id="admin" href="/pool/results" hidden data-i18n="common.results">Results</a>
     </div>
@@ -107,7 +107,10 @@
       </div>
     </form>
 
-    <footer class="foot" id="foot"></footer>
+    <footer class="foot">
+      <p class="foot-home"><a class="sm-btn quiet sm" href="/" data-home data-i18n="common.backHome">Back to the start</a></p>
+      <span id="foot"></span>
+    </footer>
   </div>
   <script src="/pool.js"></script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=onTurnstileReady" async defer></script>

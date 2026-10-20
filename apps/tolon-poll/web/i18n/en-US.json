@@ -154,5 +154,5 @@
  "pv.msg.already_there": "Already there pressed. In the real app this marks the meeting as attended and closes the reminder.",
  "email.subject": "Your Tolon poll code: {code}",
  "email.body": "Your code for the Tolon icon poll is {code}. It expires in {minutes} minutes. If you did not ask for it, you can ignore this email.",
- "pv.appNote": "The app screens are in English until the next Tolon build; this page is in {language}."
+ "common.backHome": "Back to the start"
 }

@@ -154,5 +154,5 @@
  "pv.msg.already_there": "Você tocou em Já estou lá. No app de verdade, isso marca presença na reunião e fecha o lembrete.",
  "email.subject": "Seu código da votação do Tolon: {code}",
  "email.body": "O seu código para a votação do ícone do Tolon é {code}. Ele expira em {minutes} minutos. Se você não pediu o código, pode ignorar este e-mail.",
- "pv.appNote": "As telas do app estão em inglês até a próxima versão do Tolon; esta página está em {language}."
+ "common.backHome": "Voltar ao início"
 }

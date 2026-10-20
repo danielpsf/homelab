@@ -154,5 +154,5 @@
  "pv.msg.already_there": "„I am already there“ gedrückt. In der echten App wird das Meeting damit als besucht markiert und die Erinnerung geschlossen.",
  "email.subject": "Dein Code für die Tolon-Abstimmung: {code}",
  "email.body": "Dein Code für die Abstimmung über das Tolon-Icon lautet {code}. Er läuft in {minutes} Minuten ab. Falls du ihn nicht angefordert hast, kannst du diese E-Mail ignorieren.",
- "pv.appNote": "Die App-Bildschirme sind bis zum nächsten Tolon-Build auf Englisch. Diese Seite ist auf {language}."
+ "common.backHome": "Zurück zum Anfang"
 }

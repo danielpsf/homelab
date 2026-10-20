@@ -152,5 +152,5 @@
  "pv.msg.already_there": "「I am already there」を押しました。実際のアプリでは、会議に出席済みとして記録され、リマインダーが閉じます。",
  "email.subject": "Tolonアイコン投票のコード：{code}",
  "email.body": "Tolonアイコン投票のコードは{code}です。有効期限は{minutes}分です。このメールに心当たりがない場合は、無視していただいて問題ありません。",
- "pv.appNote": "アプリの画面は、次のTolonのビルドまで英語です。このページの言語は{language}です。"
+ "common.backHome": "最初に戻る"
 }
