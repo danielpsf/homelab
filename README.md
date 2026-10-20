@@ -168,6 +168,8 @@ graph TD
 
 Terraform manages ~16 resources: the tunnel, its ingress config, 7 DNS records, and 6 Zero Trust access policies. All services except Gotify require email OTP authentication before reaching the application. Gotify uses token-based authentication only (the Android app cannot handle Cloudflare Access OTP).
 
+The Tolon poll is public as well: voters confirm their email with one-time codes that the app sends itself (the free Zero Trust plan caps Access at 50 seats). Only its results paths have a path-scoped Access app, and the app verifies the Access JWT on them.
+
 ## Services
 
 | Service | Purpose | Public | Port |
@@ -186,6 +188,7 @@ Terraform manages ~16 resources: the tunnel, its ingress config, 7 DNS records, 
 | **wazuh-indexer** | OpenSearch alert storage | Internal only | - |
 | **wazuh-manager** | SIEM analysis engine | Internal only | 1514, 1515, 55000 |
 | **wazuh-dashboard** | Security monitoring UI | `https://wazuh.domain.com` | - |
+| **tolon-poll** | Tolon app icon poll ([design](apps/tolon-poll/README.md)) | `https://tolon.domain.com` | - |
 
 ## Security
 
@@ -278,6 +281,8 @@ homelab/
 │       ├── false-positives.yml     # Known FP catalog (auto-maintained)
 │       ├── investigations/         # Dated investigation reports
 │       └── scans/                  # Trivy and CVE scan results
+├── apps/
+│   └── tolon-poll/                 # Go service for the Tolon icon poll (see its README)
 ├── secrets/                        # Docker secrets (gitignored contents)
 ├── files/
 │   ├── grafana/
