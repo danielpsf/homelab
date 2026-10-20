@@ -35,3 +35,14 @@ variable "enable_tolon_turnstile" {
   type        = bool
   default     = false
 }
+
+variable "resend_dns_records" {
+  description = "Resend sending-domain DNS records (full names), keyed by a short label"
+  type = map(object({
+    name     = string
+    type     = string
+    content  = string
+    priority = optional(number)
+  }))
+  default = {}
+}

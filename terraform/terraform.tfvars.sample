@@ -21,3 +21,11 @@ domain = "example.com"
 
 # Email address for Cloudflare Zero Trust OTP (all services)
 admin_email = "your-email@example.com"
+
+# Resend sending domain for the Tolon poll emails. Copy the records Resend shows
+# for tolon.<your-domain> (use full record names). Leave empty until then.
+# resend_dns_records = {
+#   dkim = { name = "resend._domainkey.tolon.example.com", type = "TXT", content = "p=MIGfMA0..." }
+#   spf  = { name = "send.tolon.example.com", type = "TXT", content = "v=spf1 include:amazonses.com ~all" }
+#   mx   = { name = "send.tolon.example.com", type = "MX", content = "feedback-smtp.eu-west-1.amazonses.com", priority = 10 }
+# }
