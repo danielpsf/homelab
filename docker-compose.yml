@@ -4,6 +4,7 @@ networks:
   tunnel:
   monitoring:
   wazuh:
+  tolon:
 
 volumes:
   prometheus_data:
@@ -41,6 +42,7 @@ services:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     networks:
       - tunnel
+      - tolon
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -476,7 +478,7 @@ services:
       - ./data/tolon-poll:/data
       - ${TOLON_POLL_WEB_DIR:-./apps/tolon-poll/web}:/web:ro
     networks:
-      - tunnel
+      - tolon
     security_opt:
       - no-new-privileges:true
     read_only: true
