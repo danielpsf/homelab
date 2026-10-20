@@ -171,6 +171,7 @@ func (s *server) handleOTPRequest(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email     string `json:"email"`
 		Turnstile string `json:"turnstile"`
+		Locale    string `json:"locale"`
 	}
 	if !decodeJSON(w, r, &req) {
 		return
@@ -205,14 +206,32 @@ func (s *server) handleOTPRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	// Sent whether or not the address already voted, so the response reveals nothing.
 	go func() {
-		body := "Your code for the Tolon icon poll is " + code + ".\n\nIt expires in 10 minutes. If you did not ask for it, ignore this email.\n"
-		if err := s.mail.send(email, "Your Tolon poll code", body); err != nil {
+		subject, body := codeEmail(req.Locale, code)
+		if err := s.mail.send(email, subject, body); err != nil {
 			log.Printf("otp mail %s: %v", s.logID(email), err)
 			return
 		}
 		log.Printf("otp sent %s", s.logID(email))
 	}()
 	writeJSON(w, http.StatusAccepted, map[string]bool{"ok": true})
+}
+
+// codeEmails holds the plain-text code email per supported locale; %s is the code.
+var codeEmails = map[string][2]string{
+	"en-US": {"Your Tolon poll code", "Your code is %s. It expires in 10 minutes. If you did not ask for it, ignore this email.\n"},
+	"pt-BR": {"Seu código da votação do Tolon", "Seu código é %s. Ele expira em 10 minutos. Se você não pediu este código, ignore este email.\n"},
+	"pt-PT": {"O seu código da votação do Tolon", "O seu código é %s. Expira dentro de 10 minutos. Se não pediu este código, ignore este email.\n"},
+}
+
+func init() { codeEmails["en-GB"] = codeEmails["en-US"] }
+
+// codeEmail returns subject and body for locale, falling back to en-US.
+func codeEmail(locale, code string) (string, string) {
+	t, ok := codeEmails[locale]
+	if !ok {
+		t = codeEmails["en-US"]
+	}
+	return t[0], fmt.Sprintf(t[1], code)
 }
 
 var errRateLimited = errors.New("rate limited")

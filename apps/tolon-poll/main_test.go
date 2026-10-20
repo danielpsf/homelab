@@ -48,9 +48,16 @@ func sign(t *testing.T, key *rsa.PrivateKey, kid string, claims map[string]any) 
 	return in + "." + b64(sig)
 }
 
-type fakeMail struct{ sent chan [2]string }
+type fakeMail struct {
+	sent     chan [2]string
+	subjects chan string
+}
 
 func (f *fakeMail) send(to, subject, body string) error {
+	select {
+	case f.subjects <- subject:
+	default:
+	}
 	f.sent <- [2]string{to, body}
 	return nil
 }
@@ -104,7 +111,7 @@ func newEnv(t *testing.T) *env {
 	s := newServer(db, team.URL, testAud, testOrigin, testAdmin, testSecret, web)
 	s.captcha = &turnstile{secret: "ts-secret", verifyURL: siteverify.URL, hostname: "tolon.example.test", client: http.DefaultClient}
 	s.sitekey = "site-key"
-	e := &env{s: s, mail: &fakeMail{sent: make(chan [2]string, 10)}, t: t, now: time.Now()}
+	e := &env{s: s, mail: &fakeMail{sent: make(chan [2]string, 64), subjects: make(chan string, 64)}, t: t, now: time.Now()}
 	s.mail = e.mail
 	s.now = func() time.Time { return e.now }
 	if err := s.auth.refresh(); err != nil {
@@ -394,6 +401,29 @@ func TestTurnstileRejected(t *testing.T) {
 	e.s.db.QueryRow(`SELECT COUNT(*) FROM otp_codes`).Scan(&n)
 	if n != 0 || len(e.mail.sent) != 0 {
 		t.Fatal("code issued despite Turnstile failure")
+	}
+}
+
+func TestCodeEmailLocale(t *testing.T) {
+	e := newEnv(t)
+	e.s.otpIPLimit = newLimiter(1000, time.Hour)
+	for i, tc := range []struct{ locale, subject, body string }{
+		{"pt-BR", "Seu código da votação do Tolon", "Seu código é "},
+		{"pt-PT", "O seu código da votação do Tolon", "O seu código é "},
+		{"en-GB", "Your Tolon poll code", "Your code is "},
+		{"fr-FR", "Your Tolon poll code", "Your code is "},
+		{"", "Your Tolon poll code", "Your code is "},
+	} {
+		email := "loc" + strconv.Itoa(i) + "@example.test"
+		rec := e.do("POST", "/api/otp/request", `{"email":"`+email+`","turnstile":"good","locale":"`+tc.locale+`"}`, jsonPost)
+		if rec.Code != 202 {
+			t.Fatalf("%q: %d", tc.locale, rec.Code)
+		}
+		m := <-e.mail.sent
+		subj := <-e.mail.subjects
+		if subj != tc.subject || !strings.HasPrefix(m[1], tc.body) || !codeRe.MatchString(m[1]) || strings.Contains(m[1], "http") {
+			t.Fatalf("%q: %q %q", tc.locale, subj, m[1])
+		}
 	}
 }
 
