@@ -244,10 +244,10 @@ func (s *server) handleOTPRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 // emailLocales are the languages the code email is sent in.
-var emailLocales = []string{"pt-BR", "de", "en-US", "es", "ar", "tr", "hi", "zh-CN", "ja"}
+var emailLocales = []string{"pt-BR", "de", "en-US", "es", "ar", "tr", "hi", "zh-CN", "ja", "he"}
 
 // normaliseLocale maps a requested locale onto emailLocales (pt-*, en-*, zh-* to pt-BR, en-US, zh-CN;
-// es-*, de-*, ar-*, tr-*, hi-*, ja-* to the base language); anything else becomes en-US.
+// es-*, de-*, ar-*, tr-*, hi-*, ja-*, he-* to the base language; iw and iw-* to he); anything else becomes en-US.
 func normaliseLocale(l string) string {
 	l = strings.TrimSpace(l)
 	for _, a := range emailLocales {
@@ -266,8 +266,10 @@ func normaliseLocale(l string) string {
 		return "en-US"
 	case "zh":
 		return "zh-CN"
-	case "es", "de", "ar", "tr", "hi", "ja":
+	case "es", "de", "ar", "tr", "hi", "ja", "he":
 		return lang
+	case "iw": // legacy code for Hebrew
+		return "he"
 	}
 	return "en-US"
 }

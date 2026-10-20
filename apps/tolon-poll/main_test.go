@@ -425,6 +425,7 @@ func TestNormaliseLocale(t *testing.T) {
 		"de": "de", "ar": "ar", "tr": "tr", "hi": "hi", "ja": "ja", "ZH-cn": "zh-CN",
 		"fr-FR": "en-US", "": "en-US", "xx": "en-US", "-": "en-US",
 		"de-AT": "de", "ar-EG": "ar", "ja-JP": "ja", "tr-TR": "tr", "hi-IN": "hi", "de_CH": "de",
+		"he": "he", "he-IL": "he", "iw": "he", "iw-IL": "he",
 	} {
 		if got := normaliseLocale(in); got != want {
 			t.Fatalf("normaliseLocale(%q) = %q want %q", in, got, want)
@@ -472,7 +473,7 @@ func TestEmailTextFallback(t *testing.T) {
 
 func TestBuildMessageUTF8(t *testing.T) {
 	from, _ := mail.ParseAddress("Tolon <noreply@example.test>")
-	for _, subject := range []string{"Your Tolon poll code", "رمز تصويت Tolon", "Tolon मतदान कोड", "Tolon 投票验证码", "Tolon 投票コード"} {
+	for _, subject := range []string{"Your Tolon poll code", "رمز تصويت Tolon", "Tolon मतदान कोड", "Tolon 投票验证码", "Tolon 投票コード", "קוד ההצבעה של Tolon"} {
 		raw := buildMessage(from, "v@example.test", subject, "コード 123456\nline two")
 		msg, err := mail.ReadMessage(bytes.NewReader(raw))
 		if err != nil {
