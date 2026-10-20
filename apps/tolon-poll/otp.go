@@ -32,7 +32,6 @@ const (
 	codesPerEmailDy = 5 // per 24 h, persistent
 	burnsToLockout  = 3 // burnt codes within 24 h that lock the email out
 	lockoutFor      = 24 * time.Hour
-	codesPerDay     = 200 // global, persistent
 )
 
 var emailRe = regexp.MustCompile(`^[a-z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]{1,64}@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$`)
@@ -240,11 +239,14 @@ func (s *server) storeCode(email, code string) error {
 	if err := tx.QueryRow(`SELECT COUNT(*) FROM otp_sends WHERE sent_at > ?`, now.Add(-24*time.Hour).Unix()).Scan(&perDay); err != nil {
 		return err
 	}
-	if locked > 0 || perEmail >= codesPerEmail || perEmailDay >= codesPerEmailDy || perDay >= codesPerDay {
+	if locked > 0 || perEmail >= codesPerEmail || perEmailDay >= codesPerEmailDy || perDay >= s.codesPerDay {
 		return errRateLimited
 	}
 	if _, err := tx.Exec(`INSERT INTO otp_sends (email_key, sent_at) VALUES (?, ?)`, key, now.Unix()); err != nil {
 		return err
+	}
+	if warn := (s.codesPerDay*4 + 4) / 5; perDay+1 == warn { // log once when crossing 80 %
+		log.Printf("warning: %d of %d daily code emails used", perDay+1, s.codesPerDay)
 	}
 	if _, err := tx.Exec(`INSERT INTO otp_codes (email_key, code_mac, expires_at, attempts) VALUES (?, ?, ?, 0)
 		ON CONFLICT(email_key) DO UPDATE SET code_mac = excluded.code_mac, expires_at = excluded.expires_at, attempts = 0`,

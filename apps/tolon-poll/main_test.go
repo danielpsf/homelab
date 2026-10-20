@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -343,9 +344,33 @@ func TestLockoutAfterBurntCodes(t *testing.T) {
 	}
 }
 
+func TestClientIPKey(t *testing.T) {
+	for in, want := range map[string]string{
+		"203.0.113.7":                "203.0.113.7",
+		"::ffff:203.0.113.7":         "203.0.113.7",
+		"2001:db8:1:2:aaaa::1":       "2001:db8:1:2::/64",
+		"2001:db8:1:2:ffff:ffff::99": "2001:db8:1:2::/64",
+		"2001:db8:1:3::1":            "2001:db8:1:3::/64",
+	} {
+		r := httptest.NewRequest("GET", "/", nil)
+		r.Header.Set("CF-Connecting-IP", in)
+		if got := clientIP(r); got != want {
+			t.Fatalf("clientIP(%s) = %s want %s", in, got, want)
+		}
+	}
+	e := newEnv(t)
+	for i := 0; i < 30; i++ {
+		e.do("GET", "/api/options", "", map[string]string{"CF-Connecting-IP": "2001:db8:5:5::" + strconv.Itoa(i+1)})
+	}
+	if rec := e.do("GET", "/api/options", "", map[string]string{"CF-Connecting-IP": "2001:db8:5:5:ffff::1"}); rec.Code != 429 {
+		t.Fatalf("same /64 not limited together: %d", rec.Code)
+	}
+}
+
 func TestGlobalDailyCap(t *testing.T) {
 	e := newEnv(t)
-	for i := 0; i < codesPerDay; i++ {
+	e.s.codesPerDay = 10
+	for i := 0; i < e.s.codesPerDay; i++ {
 		e.s.db.Exec(`INSERT INTO otp_sends (email_key, sent_at) VALUES (?, ?)`, "k", e.now.Unix())
 	}
 	if rec := e.do("POST", "/api/otp/request", `{"email":"x@example.test","turnstile":"good"}`, jsonPost); rec.Code != 429 {

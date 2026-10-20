@@ -12,9 +12,11 @@ import (
 	"mime"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -44,18 +46,19 @@ var securityHeaders = map[string]string{
 }
 
 type server struct {
-	db      *sql.DB
-	auth    *verifier // Cloudflare Access JWT, admin paths only
-	captcha *turnstile
-	mail    mailer // nil when SMTP is not configured
-	secret  []byte
-	sitekey string
-	contact string    // privacy contact address, served to the page
-	closeAt time.Time // POLL_DELETE_AFTER: votes close and all personal data is deleted after it
-	webDir  string
-	origin  string
-	admin   string
-	now     func() time.Time
+	db          *sql.DB
+	auth        *verifier // Cloudflare Access JWT, admin paths only
+	captcha     *turnstile
+	mail        mailer // nil when SMTP is not configured
+	secret      []byte
+	sitekey     string
+	contact     string    // privacy contact address, served to the page
+	codesPerDay int       // global cap on code emails per 24 h, persistent
+	closeAt     time.Time // POLL_DELETE_AFTER: votes close and all personal data is deleted after it
+	webDir      string
+	origin      string
+	admin       string
+	now         func() time.Time
 
 	hostLimit  *limiter // every request, per IP
 	apiLimit   *limiter // /api/*, per IP
@@ -92,6 +95,11 @@ func main() {
 	s := newServer(db, cfg["CF_ACCESS_TEAM_DOMAIN"], cfg["CF_ACCESS_AUD"], cfg["PUBLIC_ORIGIN"], cfg["ADMIN_EMAIL"], cfg["SESSION_SECRET"], envOr("WEB_DIR", "/web"))
 	s.sitekey = os.Getenv("TURNSTILE_SITEKEY")
 	s.contact = os.Getenv("CONTACT_EMAIL")
+	if v := os.Getenv("CODES_PER_DAY"); v != "" {
+		if s.codesPerDay, err = strconv.Atoi(v); err != nil || s.codesPerDay < 1 {
+			log.Fatalf("CODES_PER_DAY must be a positive integer")
+		}
+	}
 	if v := os.Getenv("POLL_DELETE_AFTER"); v != "" {
 		if s.closeAt, err = time.Parse(time.RFC3339, v); err != nil {
 			log.Fatalf("POLL_DELETE_AFTER: %v", err)
@@ -141,17 +149,18 @@ func main() {
 
 func newServer(db *sql.DB, team, aud, origin, admin, secret, webDir string) *server {
 	return &server{
-		db:         db,
-		auth:       newVerifier(team, aud),
-		secret:     []byte(secret),
-		webDir:     webDir,
-		origin:     strings.TrimRight(origin, "/"),
-		admin:      strings.ToLower(strings.TrimSpace(admin)),
-		now:        time.Now,
-		hostLimit:  newLimiter(120, time.Minute),
-		apiLimit:   newLimiter(30, time.Minute),
-		otpIPLimit: newLimiter(10, time.Hour),
-		voteLimit:  newLimiter(5, time.Hour),
+		db:          db,
+		auth:        newVerifier(team, aud),
+		secret:      []byte(secret),
+		webDir:      webDir,
+		origin:      strings.TrimRight(origin, "/"),
+		admin:       strings.ToLower(strings.TrimSpace(admin)),
+		now:         time.Now,
+		codesPerDay: 500,
+		hostLimit:   newLimiter(120, time.Minute),
+		apiLimit:    newLimiter(30, time.Minute),
+		otpIPLimit:  newLimiter(10, time.Hour),
+		voteLimit:   newLimiter(5, time.Hour),
 	}
 }
 
@@ -285,12 +294,21 @@ func (s *server) adminOnly(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// clientIP returns the rate-limit key: the IPv4 address, or the /64 of an IPv6 address.
 func clientIP(r *http.Request) string {
-	if ip := r.Header.Get("CF-Connecting-IP"); ip != "" {
+	ip := r.Header.Get("CF-Connecting-IP")
+	if ip == "" {
+		ip, _, _ = net.SplitHostPort(r.RemoteAddr)
+	}
+	addr, err := netip.ParseAddr(ip)
+	if err != nil {
 		return ip
 	}
-	host, _, _ := net.SplitHostPort(r.RemoteAddr)
-	return host
+	if addr = addr.Unmap(); addr.Is6() {
+		p, _ := addr.Prefix(64)
+		return p.String()
+	}
+	return addr.String()
 }
 
 func (s *server) serveFile(w http.ResponseWriter, r *http.Request, name string) {
