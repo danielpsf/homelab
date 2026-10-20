@@ -46,3 +46,9 @@ variable "resend_dns_records" {
   }))
   default = {}
 }
+
+variable "enable_tolon_contact" {
+  description = "Enable Email Routing and forward the Tolon poll contact address to admin_email (token needs Email Routing Edit)"
+  type        = bool
+  default     = false
+}
