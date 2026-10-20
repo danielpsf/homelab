@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -9,9 +10,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math/big"
+	"mime"
+	"mime/quotedprintable"
 	"net/http"
 	"net/http/httptest"
+	"net/mail"
 	"net/textproto"
 	"os"
 	"path/filepath"
@@ -413,26 +418,100 @@ func TestTurnstileRejected(t *testing.T) {
 	}
 }
 
-func TestCodeEmailLocale(t *testing.T) {
-	e := newEnv(t)
-	e.s.otpIPLimit = newLimiter(1000, time.Hour)
-	for i, tc := range []struct{ locale, subject, body string }{
-		{"pt-BR", "Seu código da votação do Tolon", "Seu código é "},
-		{"pt-PT", "O seu código da votação do Tolon", "O seu código é "},
-		{"en-GB", "Your Tolon poll code", "Your code is "},
-		{"fr-FR", "Your Tolon poll code", "Your code is "},
-		{"", "Your Tolon poll code", "Your code is "},
+func TestNormaliseLocale(t *testing.T) {
+	for in, want := range map[string]string{
+		"pt-BR": "pt-BR", "pt-PT": "pt-BR", "pt": "pt-BR", "PT_br": "pt-BR",
+		"en-GB": "en-US", "en": "en-US", "zh-TW": "zh-CN", "zh-Hans-CN": "zh-CN", "es-MX": "es",
+		"de": "de", "ar": "ar", "tr": "tr", "hi": "hi", "ja": "ja", "ZH-cn": "zh-CN",
+		"fr-FR": "en-US", "": "en-US", "xx": "en-US", "-": "en-US",
 	} {
-		email := "loc" + strconv.Itoa(i) + "@example.test"
-		rec := e.do("POST", "/api/otp/request", `{"email":"`+email+`","turnstile":"good","locale":"`+tc.locale+`"}`, jsonPost)
-		if rec.Code != 202 {
-			t.Fatalf("%q: %d", tc.locale, rec.Code)
+		if got := normaliseLocale(in); got != want {
+			t.Fatalf("normaliseLocale(%q) = %q want %q", in, got, want)
 		}
-		m := <-e.mail.sent
-		subj := <-e.mail.subjects
-		if subj != tc.subject || !strings.HasPrefix(m[1], tc.body) || !codeRe.MatchString(m[1]) || strings.Contains(m[1], "http") {
-			t.Fatalf("%q: %q %q", tc.locale, subj, m[1])
+	}
+}
+
+func writeI18n(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	os.MkdirAll(filepath.Join(dir, "i18n"), 0o755)
+	for name, body := range files {
+		os.WriteFile(filepath.Join(dir, "i18n", name+".json"), []byte(body), 0o644)
+	}
+}
+
+func TestEmailTextFallback(t *testing.T) {
+	dir := t.TempDir()
+	if got := loadEmailTexts(dir)["ja"]; got != defaultEmail {
+		t.Fatalf("no files: %+v", got)
+	}
+	writeI18n(t, dir, map[string]string{
+		"en-US": `{"email":{"subject":"Code for Tolon","body":"Code {code}, {minutes} min."}}`,
+		"ja":    `{"email":{"subject":"Tolon 投票コード","body":"コードは {code} です。{minutes} 分で失効します。"}}`,
+		"de":    `{"email":{"subject":"Dein Tolon-Code"}}`,
+		"tr":    `{"email.subject":"Tolon kodunuz","email.body":"Kodunuz {code}."}`,
+		"es":    `not json`,
+	})
+	texts := loadEmailTexts(dir)
+	s := &server{emails: texts}
+	for _, tc := range []struct{ locale, subject, body string }{
+		{"ja", "Tolon 投票コード", "コードは 123456 です。10 分で失効します。\n"},
+		{"de", "Dein Tolon-Code", "Code 123456, 10 min.\n"},   // body key missing: en-US body
+		{"tr-TR", "Code for Tolon", "Code 123456, 10 min.\n"}, // unknown locale: en-US
+		{"tr", "Tolon kodunuz", "Kodunuz 123456.\n"},          // flat keys
+		{"es-AR", "Code for Tolon", "Code 123456, 10 min.\n"}, // invalid file: en-US
+		{"hi", "Code for Tolon", "Code 123456, 10 min.\n"},    // missing file: en-US
+	} {
+		subj, body := s.codeEmail(tc.locale, "123456")
+		if subj != tc.subject || body != tc.body {
+			t.Fatalf("%s: %q %q", tc.locale, subj, body)
 		}
+	}
+}
+
+func TestBuildMessageUTF8(t *testing.T) {
+	from, _ := mail.ParseAddress("Tolon <noreply@example.test>")
+	for _, subject := range []string{"Your Tolon poll code", "رمز تصويت Tolon", "Tolon मतदान कोड", "Tolon 投票验证码", "Tolon 投票コード"} {
+		raw := buildMessage(from, "v@example.test", subject, "コード 123456\nline two")
+		msg, err := mail.ReadMessage(bytes.NewReader(raw))
+		if err != nil {
+			t.Fatal(err)
+		}
+		enc := msg.Header.Get("Subject")
+		for _, r := range enc {
+			if r > 127 {
+				t.Fatalf("subject header not ASCII: %q", enc)
+			}
+		}
+		dec, err := new(mime.WordDecoder).DecodeHeader(enc)
+		if err != nil || dec != subject {
+			t.Fatalf("subject round trip: %q -> %q (%v)", subject, dec, err)
+		}
+		if msg.Header.Get("Content-Type") != "text/plain; charset=UTF-8" {
+			t.Fatalf("content type %q", msg.Header.Get("Content-Type"))
+		}
+		body, _ := io.ReadAll(quotedprintable.NewReader(msg.Body))
+		if string(body) != "コード 123456\r\nline two" {
+			t.Fatalf("body round trip: %q", body)
+		}
+	}
+}
+
+func TestCodeEmailSent(t *testing.T) {
+	e := newEnv(t)
+	writeI18n(t, e.s.webDir, map[string]string{"pt-BR": `{"email":{"subject":"Seu código","body":"Seu código é {code}. Expira em {minutes} minutos."}}`})
+	e.s.emails = loadEmailTexts(e.s.webDir)
+	rec := e.do("POST", "/api/otp/request", `{"email":"loc@example.test","turnstile":"good","locale":"pt-PT"}`, jsonPost)
+	if rec.Code != 202 {
+		t.Fatalf("request: %d", rec.Code)
+	}
+	m := <-e.mail.sent
+	subj := <-e.mail.subjects
+	code := codeRe.FindString(m[1])
+	if subj != "Seu código" || code == "" || m[1] != "Seu código é "+code+". Expira em 10 minutos.\n" {
+		t.Fatalf("pt-PT mail: %q %q", subj, m[1])
+	}
+	if rec := e.verify("loc@example.test", code); rec.Code != 200 {
+		t.Fatalf("code from the body does not verify: %d", rec.Code)
 	}
 }
 

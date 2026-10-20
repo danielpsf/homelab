@@ -54,9 +54,10 @@ type server struct {
 	mail        mailer // nil when SMTP is not configured
 	secret      []byte
 	sitekey     string
-	contact     string    // privacy contact address, served to the page
-	codesPerDay int       // global cap on code emails per 24 h, persistent
-	closeAt     time.Time // POLL_DELETE_AFTER: votes close and all personal data is deleted after it
+	contact     string               // privacy contact address, served to the page
+	emails      map[string]emailText // code email texts per locale, from web/i18n
+	codesPerDay int                  // global cap on code emails per 24 h, persistent
+	closeAt     time.Time            // POLL_DELETE_AFTER: votes close and all personal data is deleted after it
 	webDir      string
 	origin      string
 	admin       string
@@ -98,6 +99,7 @@ func main() {
 	s := newServer(db, cfg["CF_ACCESS_TEAM_DOMAIN"], cfg["CF_ACCESS_AUD"], cfg["PUBLIC_ORIGIN"], cfg["ADMIN_EMAIL"], cfg["SESSION_SECRET"], envOr("WEB_DIR", "/web"))
 	s.sitekey = os.Getenv("TURNSTILE_SITEKEY")
 	s.contact = os.Getenv("CONTACT_EMAIL")
+	s.emails = loadEmailTexts(s.webDir)
 	if v := os.Getenv("CODES_PER_DAY"); v != "" {
 		if s.codesPerDay, err = strconv.Atoi(v); err != nil || s.codesPerDay < 1 {
 			log.Fatalf("CODES_PER_DAY must be a positive integer")

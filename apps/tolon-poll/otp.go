@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -13,13 +14,18 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"mime"
+	"mime/quotedprintable"
 	"net"
 	"net/http"
 	"net/mail"
 	"net/smtp"
 	"net/textproto"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -145,11 +151,7 @@ func (m *smtpMailer) send(to, subject, body string) error {
 	if err != nil {
 		return err
 	}
-	msg := "From: " + from.String() + "\r\nTo: " + to + "\r\nSubject: " + subject +
-		"\r\nDate: " + time.Now().UTC().Format(time.RFC1123Z) +
-		"\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n" +
-		strings.ReplaceAll(body, "\n", "\r\n")
-	if _, err := w.Write([]byte(msg)); err != nil {
+	if _, err := w.Write(buildMessage(from, to, subject, body)); err != nil {
 		return err
 	}
 	if err := w.Close(); err != nil {
@@ -231,7 +233,7 @@ func (s *server) handleOTPRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	// Sent whether or not the address already voted, so the response reveals nothing.
 	go func() {
-		subject, body := codeEmail(req.Locale, code)
+		subject, body := s.codeEmail(req.Locale, code)
 		if err := s.mail.send(email, subject, body); err != nil {
 			log.Printf("otp mail %s: %s", s.logID(email), smtpErrClass(err))
 			return
@@ -241,22 +243,106 @@ func (s *server) handleOTPRequest(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusAccepted, map[string]bool{"ok": true})
 }
 
-// codeEmails holds the plain-text code email per supported locale; %s is the code.
-var codeEmails = map[string][2]string{
-	"en-US": {"Your Tolon poll code", "Your code is %s. It expires in 10 minutes. If you did not ask for it, ignore this email.\n"},
-	"pt-BR": {"Seu código da votação do Tolon", "Seu código é %s. Ele expira em 10 minutos. Se você não pediu este código, ignore este email.\n"},
-	"pt-PT": {"O seu código da votação do Tolon", "O seu código é %s. Expira dentro de 10 minutos. Se não pediu este código, ignore este email.\n"},
+// emailLocales are the languages the code email is sent in.
+var emailLocales = []string{"pt-BR", "de", "en-US", "es", "ar", "tr", "hi", "zh-CN", "ja"}
+
+// normaliseLocale maps a requested locale onto emailLocales; unknown values become en-US.
+func normaliseLocale(l string) string {
+	l = strings.TrimSpace(l)
+	for _, a := range emailLocales {
+		if strings.EqualFold(l, a) {
+			return a
+		}
+	}
+	lang := strings.ToLower(l)
+	if i := strings.IndexAny(lang, "-_"); i >= 0 {
+		lang = lang[:i]
+	}
+	switch lang {
+	case "pt":
+		return "pt-BR"
+	case "en":
+		return "en-US"
+	case "zh":
+		return "zh-CN"
+	case "es":
+		return "es"
+	}
+	return "en-US"
 }
 
-func init() { codeEmails["en-GB"] = codeEmails["en-US"] }
+type emailText struct{ subject, body string }
 
-// codeEmail returns subject and body for locale, falling back to en-US.
-func codeEmail(locale, code string) (string, string) {
-	t, ok := codeEmails[locale]
-	if !ok {
-		t = codeEmails["en-US"]
+var defaultEmail = emailText{"Your Tolon poll code",
+	"Your code is {code}. It expires in {minutes} minutes. If you did not ask for it, ignore this email."}
+
+// loadEmailTexts reads email.subject and email.body from <webDir>/i18n/<locale>.json.
+// A missing file or key falls back to en-US, and a missing en-US to defaultEmail.
+func loadEmailTexts(webDir string) map[string]emailText {
+	read := func(locale string) (t emailText) {
+		b, err := os.ReadFile(filepath.Join(webDir, "i18n", locale+".json"))
+		if err != nil {
+			return t
+		}
+		var doc map[string]json.RawMessage
+		if json.Unmarshal(b, &doc) != nil {
+			log.Printf("i18n %s: invalid JSON", locale)
+			return t
+		}
+		var nested struct{ Subject, Body string }
+		_ = json.Unmarshal(doc["email"], &nested)
+		var flat string
+		if t.subject = nested.Subject; t.subject == "" && json.Unmarshal(doc["email.subject"], &flat) == nil {
+			t.subject = flat
+		}
+		flat = ""
+		if t.body = nested.Body; t.body == "" && json.Unmarshal(doc["email.body"], &flat) == nil {
+			t.body = flat
+		}
+		return t
 	}
-	return t[0], fmt.Sprintf(t[1], code)
+	base := read("en-US")
+	if base.subject == "" {
+		base.subject = defaultEmail.subject
+	}
+	if base.body == "" {
+		base.body = defaultEmail.body
+	}
+	texts := map[string]emailText{}
+	for _, l := range emailLocales {
+		t := read(l)
+		if t.subject == "" {
+			t.subject = base.subject
+		}
+		if t.body == "" {
+			t.body = base.body
+		}
+		texts[l] = t
+	}
+	return texts
+}
+
+// codeEmail returns the subject and body for the requested locale with the code filled in.
+func (s *server) codeEmail(locale, code string) (string, string) {
+	t, ok := s.emails[normaliseLocale(locale)]
+	if !ok {
+		t = defaultEmail
+	}
+	r := strings.NewReplacer("{code}", code, "{minutes}", strconv.Itoa(int(codeTTL.Minutes())))
+	return r.Replace(t.subject), r.Replace(t.body) + "\n"
+}
+
+// buildMessage renders a UTF-8 plain-text mail: RFC 2047 subject, quoted-printable body.
+func buildMessage(from *mail.Address, to, subject, body string) []byte {
+	var qp bytes.Buffer
+	w := quotedprintable.NewWriter(&qp)
+	_, _ = w.Write([]byte(strings.ReplaceAll(body, "\n", "\r\n")))
+	_ = w.Close()
+	return []byte("From: " + from.String() + "\r\nTo: " + to +
+		"\r\nSubject: " + mime.QEncoding.Encode("UTF-8", subject) +
+		"\r\nDate: " + time.Now().UTC().Format(time.RFC1123Z) +
+		"\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8" +
+		"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n" + qp.String())
 }
 
 var errRateLimited = errors.New("rate limited")
