@@ -40,8 +40,6 @@
 .sm-menu-list [lang="he"]{font-family:Inter,var(--ff-he)}
 
 [hidden]{display:none!important}
-/* Swiss Moss muted grey is 4.45:1 on paper; darken it for small text in light mode (AA needs 4.5:1). */
-@media (prefers-color-scheme:light){:root{--sm-muted:#5C625C}}
 .skip{position:absolute;inset-inline-start:16px;top:-80px;z-index:10;padding:10px 16px;border-radius:var(--sm-radius-pill);background:var(--sm-ink);color:var(--sm-paper);font-weight:600;text-decoration:none}
 .skip:focus{top:12px}
 
