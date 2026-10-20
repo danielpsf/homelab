@@ -196,6 +196,14 @@ func openDB(path string) (*sql.DB, error) {
 		sent_at   INTEGER NOT NULL
 	);
 	CREATE INDEX IF NOT EXISTS otp_sends_key ON otp_sends (email_key, sent_at);
+	CREATE TABLE IF NOT EXISTS otp_burns (
+		email_key TEXT NOT NULL,
+		burnt_at  INTEGER NOT NULL
+	);
+	CREATE TABLE IF NOT EXISTS otp_lockouts (
+		email_key TEXT PRIMARY KEY,
+		until     INTEGER NOT NULL
+	);
 	CREATE TABLE IF NOT EXISTS sessions (
 		id_hash    TEXT PRIMARY KEY,
 		email      TEXT NOT NULL,

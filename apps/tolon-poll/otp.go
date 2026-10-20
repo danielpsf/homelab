@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"crypto/tls"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -27,7 +28,10 @@ const (
 	maxCodeAttempts = 5
 	sessionTTL      = 24 * time.Hour
 	sessionCookie   = "__Host-tolon_session"
-	codesPerEmail   = 3   // per hour, persistent
+	codesPerEmail   = 3 // per hour, persistent
+	codesPerEmailDy = 5 // per 24 h, persistent
+	burnsToLockout  = 3 // burnt codes within 24 h that lock the email out
+	lockoutFor      = 24 * time.Hour
 	codesPerDay     = 200 // global, persistent
 )
 
@@ -223,14 +227,20 @@ func (s *server) storeCode(email, code string) error {
 		return err
 	}
 	defer tx.Rollback()
-	var perEmail, perDay int
+	var perEmail, perEmailDay, perDay, locked int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM otp_lockouts WHERE email_key = ? AND until > ?`, key, now.Unix()).Scan(&locked); err != nil {
+		return err
+	}
 	if err := tx.QueryRow(`SELECT COUNT(*) FROM otp_sends WHERE email_key = ? AND sent_at > ?`, key, now.Add(-time.Hour).Unix()).Scan(&perEmail); err != nil {
+		return err
+	}
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM otp_sends WHERE email_key = ? AND sent_at > ?`, key, now.Add(-24*time.Hour).Unix()).Scan(&perEmailDay); err != nil {
 		return err
 	}
 	if err := tx.QueryRow(`SELECT COUNT(*) FROM otp_sends WHERE sent_at > ?`, now.Add(-24*time.Hour).Unix()).Scan(&perDay); err != nil {
 		return err
 	}
-	if perEmail >= codesPerEmail || perDay >= codesPerDay {
+	if locked > 0 || perEmail >= codesPerEmail || perEmailDay >= codesPerEmailDy || perDay >= codesPerDay {
 		return errRateLimited
 	}
 	if _, err := tx.Exec(`INSERT INTO otp_sends (email_key, sent_at) VALUES (?, ?)`, key, now.Unix()); err != nil {
@@ -288,7 +298,12 @@ func (s *server) checkCode(email, code string) bool {
 	if tx.QueryRow(`SELECT code_mac, expires_at, attempts FROM otp_codes WHERE email_key = ?`, key).Scan(&stored, &exp, &attempts) != nil {
 		return false
 	}
-	if attempts >= maxCodeAttempts || s.now().Unix() > exp {
+	now := s.now()
+	var locked int
+	if tx.QueryRow(`SELECT COUNT(*) FROM otp_lockouts WHERE email_key = ? AND until > ?`, key, now.Unix()).Scan(&locked) != nil || locked > 0 {
+		return false
+	}
+	if attempts >= maxCodeAttempts || now.Unix() > exp {
 		return false
 	}
 	ok := subtle.ConstantTimeCompare([]byte(stored), []byte(s.mac("code", email, code))) == 1
@@ -296,11 +311,31 @@ func (s *server) checkCode(email, code string) bool {
 		_, err = tx.Exec(`DELETE FROM otp_codes WHERE email_key = ?`, key)
 	} else {
 		_, err = tx.Exec(`UPDATE otp_codes SET attempts = attempts + 1 WHERE email_key = ?`, key)
+		if err == nil && attempts+1 == maxCodeAttempts {
+			err = s.recordBurn(tx, key, now)
+		}
 	}
 	if err != nil || tx.Commit() != nil {
 		return false
 	}
 	return ok
+}
+
+// recordBurn notes a burnt code and locks the email out once burnsToLockout codes burn within 24 h.
+func (s *server) recordBurn(tx *sql.Tx, key string, now time.Time) error {
+	if _, err := tx.Exec(`INSERT INTO otp_burns (email_key, burnt_at) VALUES (?, ?)`, key, now.Unix()); err != nil {
+		return err
+	}
+	var burns int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM otp_burns WHERE email_key = ? AND burnt_at > ?`, key, now.Add(-24*time.Hour).Unix()).Scan(&burns); err != nil {
+		return err
+	}
+	if burns < burnsToLockout {
+		return nil
+	}
+	_, err := tx.Exec(`INSERT INTO otp_lockouts (email_key, until) VALUES (?, ?)
+		ON CONFLICT(email_key) DO UPDATE SET until = excluded.until`, key, now.Add(lockoutFor).Unix())
+	return err
 }
 
 // sessionEmail returns the email of a valid session cookie, or "".
@@ -329,7 +364,7 @@ func (s *server) closed() bool { return !s.closeAt.IsZero() && s.now().After(s.c
 
 func (s *server) prune() {
 	if s.closed() {
-		for _, t := range []string{"votes", "sessions", "otp_codes", "otp_sends"} {
+		for _, t := range []string{"votes", "sessions", "otp_codes", "otp_sends", "otp_burns", "otp_lockouts"} {
 			if _, err := s.db.Exec(`DELETE FROM ` + t); err != nil {
 				log.Printf("retention delete %s: %v", t, err)
 			}
@@ -343,7 +378,10 @@ func (s *server) prune() {
 	} {
 		_, _ = s.db.Exec(q, now)
 	}
-	_, _ = s.db.Exec(`DELETE FROM otp_sends WHERE sent_at <= ?`, now-int64((24*time.Hour).Seconds()))
+	day := now - int64((24 * time.Hour).Seconds())
+	_, _ = s.db.Exec(`DELETE FROM otp_sends WHERE sent_at <= ?`, day)
+	_, _ = s.db.Exec(`DELETE FROM otp_burns WHERE burnt_at <= ?`, day)
+	_, _ = s.db.Exec(`DELETE FROM otp_lockouts WHERE until <= ?`, now)
 }
 
 func randInt(max int64) (int64, error) {

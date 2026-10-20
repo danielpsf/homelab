@@ -305,6 +305,44 @@ func TestOTPRequestRevealsNothingAndLimits(t *testing.T) {
 	}
 }
 
+func TestPerEmailDailyCap(t *testing.T) {
+	e := newEnv(t)
+	for i := 0; i < 3; i++ {
+		e.requestCode("day@example.test")
+	}
+	e.now = e.now.Add(61 * time.Minute)
+	e.requestCode("day@example.test")
+	e.requestCode("day@example.test")
+	e.now = e.now.Add(61 * time.Minute)
+	if rec := e.do("POST", "/api/otp/request", `{"email":"day@example.test","turnstile":"good"}`, jsonPost); rec.Code != 429 {
+		t.Fatalf("6th code in a day: %d", rec.Code)
+	}
+}
+
+func TestLockoutAfterBurntCodes(t *testing.T) {
+	e := newEnv(t)
+	e.s.otpIPLimit = newLimiter(1000, time.Hour)
+	var code string
+	for i := 0; i < burnsToLockout; i++ {
+		code = e.requestCode("lock@example.test")
+		for j := 0; j < maxCodeAttempts; j++ {
+			e.verify("lock@example.test", "x")
+		}
+	}
+	e.now = e.now.Add(61 * time.Minute) // past the hourly limit, still inside the lockout
+	if rec := e.do("POST", "/api/otp/request", `{"email":"lock@example.test","turnstile":"good"}`, jsonPost); rec.Code != 429 {
+		t.Fatalf("request while locked: %d", rec.Code)
+	}
+	if rec := e.verify("lock@example.test", code); rec.Code != 400 {
+		t.Fatalf("verify while locked: %d", rec.Code)
+	}
+	e.now = e.now.Add(lockoutFor)
+	e.s.prune()
+	if c := e.requestCode("lock@example.test"); e.verify("lock@example.test", c).Code != 200 {
+		t.Fatal("still locked after 24 h")
+	}
+}
+
 func TestGlobalDailyCap(t *testing.T) {
 	e := newEnv(t)
 	for i := 0; i < codesPerDay; i++ {
@@ -570,7 +608,7 @@ func TestRetention(t *testing.T) {
 	}
 	e.requestCode("pending@example.test")
 	count := func() (n int) {
-		for _, tb := range []string{"votes", "sessions", "otp_codes", "otp_sends"} {
+		for _, tb := range []string{"votes", "sessions", "otp_codes", "otp_sends", "otp_burns", "otp_lockouts"} {
 			var k int
 			e.s.db.QueryRow(`SELECT COUNT(*) FROM ` + tb).Scan(&k)
 			n += k
