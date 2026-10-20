@@ -1,0 +1,110 @@
+[
+  {
+    "id": "tolon-bell",
+    "name": "Tolón",
+    "tagline": "A brass cowbell caught mid-swing.",
+    "story": "In the mountains nobody sets an alarm for the herd. One low bell, tolón, tolón, tells you where everyone is, and you walk over without worry. That is what Tolon does for your day. A minute or two before the meeting it gives you one brass note, and you go. There is no flood of pings and no red badge. The mark is a cencerro, the trapezoid Spanish cowbell, caught mid-swing on its strap, with the clapper lagging behind the way a real one does. Brass sits on deep moss green, a warm object in a category full of cold ones. It is the only concept here built around a sound.",
+    "history": [
+      "It started from the name: tolón is the sound of a Spanish cowbell. Fifteen small thumbnails of bells were sketched first.",
+      "The upright bell read as a kettlebell. The next try, hanging from a cord, read as a pendant lamp.",
+      "Tilting the bell into a mid-swing and moving the clapper to the mouth finally made it read as a bell.",
+      "The one deliberate imperfection: the left flank is cut fuller than the right, the way tin shears would leave it.",
+      "At 16 px it is a trapezoid with a dot. The dot is what makes it a bell, and the brass on moss is not high contrast."
+    ],
+    "images": {
+      "icon": "assets/tolon-bell/icon.png",
+      "small": "assets/tolon-bell/16.png",
+      "scene": "assets/tolon-bell/scene.png"
+    }
+  },
+  {
+    "id": "dolunay",
+    "name": "Dolunay",
+    "tagline": "A hand-cut full moon with one small friend looking up.",
+    "story": "In Turkish, tolon is the moon on its fourteenth night, the full one that nobody misses. It rises, fills the sky, keeps time like the oldest clock there is, and then lets the night go on. That is the takeover: it fills your screen, holds you for one decision, and leaves. In Buryat the same word means a ray or a gleam. The mark is a cream disc on night green with a faint halo for the gleam. One small figure at the bottom looks up, the one who never misses it. The dark appearance is the hero here, and the light icon keeps its night plate on purpose.",
+    "history": [
+      "The idea came from two meanings of the name, the Turkish full moon and the Buryat word for a ray of light. Fifteen moon thumbnails were sketched.",
+      "A bare disc read as a circle and nothing more. A watcher dot, a reflection and a mare shape were all tried and dropped.",
+      "Adding a small figure at the bottom, its head silhouetted against the moon, turned the disc into a scene.",
+      "The one deliberate imperfection: the edge is cut by hand, with twelve anchor points each pushed 6 to 16 units off a true circle.",
+      "This is the weakest concept at small sizes. At 16 px it is a cream disc on a dark tile, and that is all."
+    ],
+    "images": {
+      "icon": "assets/dolunay/icon.png",
+      "small": "assets/dolunay/16.png",
+      "scene": "assets/dolunay/scene.png"
+    }
+  },
+  {
+    "id": "lon",
+    "name": "Lon",
+    "tagline": "A moss pebble with two wide cream eyes.",
+    "story": "Lon is a small moss pebble who lives just under the edge of your screen. Most of the day you forget it is there. A minute before the meeting the top of its head rises over the edge, two wide cream eyes look up at you, and that is the whole message: it is time. It never sighs and never counts your misses. When you join, it ducks back down, pleased. The icon shows only the fragment that peeks, the crown of the head and the eyes. The whole character lives in the takeover screen. The two o's in the word tolon are its eyes, so the wordmark and the mascot are one idea.",
+    "history": [
+      "Early sketches of this territory came out as a tombstone. Reshaping it into a pebble wider than tall fixed that.",
+      "The icon was cut down to the part that peeks, the crown and two eyes. The bottom edge is flat because it is the edge of your screen.",
+      "Six states were drawn on a character sheet. The snoozed face first looked grumpy, so the lids were opened a little.",
+      "The one deliberate imperfection: the crown sits slightly left of centre and the left shoulder rises higher, a small listening tilt.",
+      "At 16 px the eyes are 3 px squares, which is the limit of what that size can show."
+    ],
+    "images": {
+      "icon": "assets/lon/icon.png",
+      "small": "assets/lon/16.png",
+      "scene": "assets/lon/scene.png"
+    }
+  },
+  {
+    "id": "peek",
+    "name": "Peek",
+    "tagline": "A felted moss dome with rosy cheeks and mismatched eyes.",
+    "story": "Just below the bottom edge of your display lives a quiet moss creature. For fifty-nine minutes of the hour it stays out of your way. Sixty seconds before your meeting it peeks up over the edge with wide, calm eyes and a small smile, as if to say it is time. When you press one key to join, it ducks back down into the moss. Other apps in this space slap your face or point a finger. This one is the polite studio companion that makes sure you arrive on time. The icon and the takeover use the same trick: the creature rises over the bottom edge of the squircle, and later over the bottom of your screen.",
+    "history": [
+      "Twelve thumbnails explored the idea, and the creature peeking over the bottom edge was picked for how clearly it echoes the screen mechanic.",
+      "The pick was refined twice and redrawn as clean vector shapes, then checked in two review rounds at 1024, 128, 32 and 16 px.",
+      "Hand-pixelled versions were made for 16 px and 32 px, plus a menu bar glyph. At 16 px the square eyes look a little robotic.",
+      "The one deliberate imperfection: the two eyes do not match. The left is a taller oval, the right a smaller circle set lower, which gives a curious head tilt.",
+      "A sheet of six moods was drawn from the final mark, and the wordmark tilts the counters of its two o's toward the l."
+    ],
+    "images": {
+      "icon": "assets/peek/icon.png",
+      "small": "assets/peek/16.png",
+      "scene": "assets/peek/scene.png"
+    }
+  },
+  {
+    "id": "pasture-bell",
+    "name": "Pasture bell",
+    "tagline": "A tilted alpine cowbell with a leather loop.",
+    "story": "In Spanish, tolón, tolón is the deep sound of a pasture bell carried across a meadow at dusk. High in the mountains nobody uses a shrill alarm. One low, familiar brass note travels across the valley and tells you where everyone is. Tolon brings that to your desktop. Instead of twenty pings you learn to ignore, it rings once, visually and calmly, across your whole screen right before your meeting begins. The mark is a flat-shouldered, trapezoid alpine cowbell, not the rounded bell of a notification badge. It is a hand-forged object of use: grounded, resonant and private, with brass on moss and a saddle-leather loop.",
+    "history": [
+      "Twelve thumbnails explored the cowbell. The flat-shouldered alpine shape was chosen over the rounded notification bell.",
+      "The pick was refined, redrawn as clean vector shapes and reviewed in two rounds at 1024, 128, 32 and 16 px.",
+      "The final bell tilts counter-clockwise, with a brass body, a leather loop and a round cream clapper peeking below the rim.",
+      "The one deliberate imperfection: the bottom rim is a hand-hammered wave. The top corners stayed sharp, which looks a little stiff.",
+      "At 16 px the tilt and the leather loop are lost to pixel snapping. The wordmark turns the second o into a small bell."
+    ],
+    "images": {
+      "icon": "assets/pasture-bell/icon.png",
+      "small": "assets/pasture-bell/16.png",
+      "scene": "assets/pasture-bell/scene.png"
+    }
+  },
+  {
+    "id": "knock",
+    "name": "Knock",
+    "tagline": "A door ajar and a wedge of warm lamplight.",
+    "story": "Think of the best colleague you ever shared an office with. Before a big meeting they do not barge in or shout. They give two gentle raps on the doorframe, crack the door open an inch so a warm wedge of hallway light falls across your desk, and say that they are starting. In Malay, tolong means please. In Buryat, tolon means a ray of light. This concept joins both meanings into one quiet ritual: the polite knock and the sliver of light that invites you into the room on time. It is the only concept here that uses perspective and strong light and dark contrast.",
+    "history": [
+      "Twelve thumbnails explored the idea of a door opening and light spilling in, drawing on two meanings of the name: please and a ray of light.",
+      "The pick was redrawn as clean vector shapes: a dark ink room, a moss green door and a golden beam, with a brass knob.",
+      "Two review rounds at 1024, 128, 32 and 16 px followed. At 16 px the diagonal beam turns into a jagged staircase and can read as a musical note.",
+      "The one deliberate imperfection: the doorknob is a slightly tilted oval. The light edges bow by only a few pixels, too little to notice.",
+      "The wordmark turns the foot of the l into an angled wedge that matches the spilled light."
+    ],
+    "images": {
+      "icon": "assets/knock/icon.png",
+      "small": "assets/knock/16.png",
+      "scene": "assets/knock/scene.png"
+    }
+  }
+]

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex">
+  <title>Tolon icon poll</title>
+  <link rel="stylesheet" href="/swiss-moss.css">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip" href="#poll">Skip to the poll</a>
+  <div class="page">
+    <div class="top">
+      <span class="brand">Tolon</span>
+      <p class="who" id="who" hidden>Signed in as <strong id="email"></strong> <button type="button" class="linkbtn" id="signout">Sign out</button></p>
+    </div>
+
+    <header class="hero">
+      <h1>Which icon should Tolon wear?</h1>
+      <p>Tolon is an open-source desktop app that takes over your screen a minute before each meeting, so you join on time. It works only on your computer, needs no account and sends no telemetry.</p>
+      <p>We have six candidate icons. Pick the one you would want on your Dock or taskbar. You can also react to each icon and leave a comment. It takes about two minutes, and the order is random for every visitor.</p>
+      <div class="links">
+        <a class="sm-btn" id="repo" href="https://github.com/danielpsf/tolon" target="_blank" rel="noopener">Tolon on GitHub</a>
+        <a class="sm-btn" href="/preview/">See why the icons look like this</a>
+        <a class="sm-btn quiet" id="admin" href="/pool/results" hidden>Results</a>
+      </div>
+      <p class="privacy">We store your email (checked with a one-time code) so each person votes once, plus your choices and comment. Nothing else, no tracking. Ask Daniel to delete it any time.</p>
+    </header>
+
+    <div id="status" role="status" aria-live="polite"></div>
+
+    <section id="loading" class="note" aria-busy="true"><p>Loading the icons.</p></section>
+
+    <section id="load-error" class="note warn" hidden>
+      <h2>The icons did not load</h2>
+      <p>Reload the page. If it keeps happening, tell Daniel.</p>
+      <button type="button" class="sm-btn" id="retry">Try again</button>
+    </section>
+
+    <section id="signin" class="note signin" hidden>
+      <h2>Confirm your email to vote</h2>
+      <p id="signin-intro">Enter your email address. We send a 6-digit code to it, so each person can vote once.</p>
+
+      <form id="email-form" novalidate>
+        <div class="sm-field">
+          <label class="sm-label" for="email-input">Your email</label>
+          <input class="sm-input" type="email" id="email-input" name="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required>
+        </div>
+      </form>
+
+      <div class="ts-wrap">
+        <span class="sm-label" id="ts-label">Security check</span>
+        <div id="turnstile" role="group" aria-labelledby="ts-label"></div>
+        <p class="sm-hint" id="ts-note"></p>
+      </div>
+
+      <div class="errors" id="email-errors" role="alert"></div>
+      <div class="actions-row" id="email-actions">
+        <button type="submit" form="email-form" class="sm-btn primary lg" id="email-send">Send me a code</button>
+      </div>
+
+      <form id="code-form" novalidate hidden>
+        <p id="code-hint">We sent a code to <strong id="sent-to"></strong>. It expires in 10 minutes.</p>
+        <div class="sm-field">
+          <label class="sm-label" for="code-input">6-digit code</label>
+          <input class="sm-input code" type="text" id="code-input" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" spellcheck="false" aria-describedby="code-hint">
+        </div>
+        <div class="errors" id="code-errors" role="alert"></div>
+        <button type="submit" class="sm-btn primary lg" id="code-send">Confirm code</button>
+        <p class="alt">
+          <button type="button" class="linkbtn" id="resend" disabled>Send a new code</button>
+          <button type="button" class="linkbtn" id="change">Use a different email</button>
+        </p>
+      </form>
+    </section>
+
+    <section id="voted" class="note ok" tabindex="-1" hidden>
+      <h2>You have already voted</h2>
+      <p>Thank you. Each person votes once, so there is nothing more to do here.</p>
+    </section>
+
+    <section id="thanks" class="note ok" tabindex="-1" hidden>
+      <h2>Thank you, your vote is in</h2>
+      <p id="thanks-text">You can close this page.</p>
+    </section>
+
+    <form id="poll" novalidate hidden>
+      <h2 class="section-title">The icons</h2>
+      <p class="section-hint">Pick one favourite. The reactions are optional.</p>
+      <ul class="cards" id="cards"></ul>
+
+      <div class="comment">
+        <label class="sm-label" for="comment">Comment <span class="sm-optional">(optional)</span></label>
+        <span class="sm-hint" id="comment-hint">Please leave out personal details.</span>
+        <textarea class="sm-textarea" id="comment" maxlength="1000" aria-describedby="comment-hint counter" placeholder="What drew you to your favourite, or put you off the others?"></textarea>
+        <span class="counter" id="counter" aria-live="off">0 of 1000 characters</span>
+      </div>
+
+      <div class="errors" id="errors" role="alert"></div>
+
+      <div class="submit">
+        <button type="submit" class="sm-btn primary lg" id="send">Send my vote</button>
+        <p class="hint">Votes cannot be changed afterwards, so check your choices first.</p>
+      </div>
+    </form>
+
+    <footer class="foot">
+      Interface fonts are Inter and Inter Tight, styled with Swiss Moss. See <a href="/licenses/Inter-OFL-1.1.txt">the licences</a>.
+    </footer>
+  </div>
+  <script src="/pool.js"></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=onTurnstileReady" async defer></script>
+</body>
+</html>
