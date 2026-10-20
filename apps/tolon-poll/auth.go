@@ -23,9 +23,10 @@ type verifier struct {
 	client   *http.Client
 	now      func() time.Time
 
-	mu        sync.RWMutex
-	keys      map[string]*rsa.PublicKey
-	lastFetch time.Time
+	refreshMu   sync.Mutex // single flight: one certs fetch at a time
+	mu          sync.RWMutex
+	keys        map[string]*rsa.PublicKey
+	lastAttempt time.Time
 }
 
 func newVerifier(teamDomain, audience string) *verifier {
@@ -40,7 +41,17 @@ func newVerifier(teamDomain, audience string) *verifier {
 	}
 }
 
+// refresh fetches the signing keys; concurrent callers wait for the one fetch in flight.
 func (v *verifier) refresh() error {
+	v.refreshMu.Lock()
+	defer v.refreshMu.Unlock()
+	return v.fetch()
+}
+
+func (v *verifier) fetch() error {
+	v.mu.Lock()
+	v.lastAttempt = v.now()
+	v.mu.Unlock()
 	resp, err := v.client.Get(v.certsURL)
 	if err != nil {
 		return err
@@ -76,23 +87,35 @@ func (v *verifier) refresh() error {
 		return errors.New("certs: no RSA keys")
 	}
 	v.mu.Lock()
-	v.keys, v.lastFetch = keys, v.now()
+	v.keys = keys
 	v.mu.Unlock()
 	return nil
 }
 
 // key returns the key for kid, refetching at most every 30s when the kid is unknown (key rotation).
 func (v *verifier) key(kid string) *rsa.PublicKey {
-	v.mu.RLock()
-	k, stale := v.keys[kid], v.now().Sub(v.lastFetch) > 30*time.Second
-	v.mu.RUnlock()
-	if k == nil && stale {
-		_ = v.refresh()
-		v.mu.RLock()
-		k = v.keys[kid]
-		v.mu.RUnlock()
+	if k := v.lookup(kid); k != nil {
+		return k
 	}
-	return k
+	v.refreshMu.Lock()
+	defer v.refreshMu.Unlock()
+	if k := v.lookup(kid); k != nil { // fetched by the caller we waited for
+		return k
+	}
+	v.mu.RLock()
+	recent := v.now().Sub(v.lastAttempt) <= 30*time.Second
+	v.mu.RUnlock()
+	if recent {
+		return nil
+	}
+	_ = v.fetch()
+	return v.lookup(kid)
+}
+
+func (v *verifier) lookup(kid string) *rsa.PublicKey {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+	return v.keys[kid]
 }
 
 var errUnauthorized = errors.New("unauthorized")

@@ -18,6 +18,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -66,11 +68,12 @@ func (f *fakeMail) send(to, subject, body string) error {
 }
 
 type env struct {
-	s    *server
-	h    http.Handler
-	mail *fakeMail
-	t    *testing.T
-	now  time.Time
+	certHits *atomic.Int32
+	s        *server
+	h        http.Handler
+	mail     *fakeMail
+	t        *testing.T
+	now      time.Time
 }
 
 // tok signs an Access JWT for the admin app; mod adjusts claims.
@@ -85,7 +88,10 @@ func (e *env) tok(email string, mod func(map[string]any)) string {
 
 func newEnv(t *testing.T) *env {
 	t.Helper()
+	hits := &atomic.Int32{}
 	team := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		time.Sleep(20 * time.Millisecond)
 		json.NewEncoder(w).Encode(map[string]any{"keys": []map[string]string{{
 			"kid": "k1", "kty": "RSA", "alg": "RS256",
 			"n": b64(testKey.N.Bytes()), "e": b64(big.NewInt(int64(testKey.E)).Bytes()),
@@ -114,7 +120,7 @@ func newEnv(t *testing.T) *env {
 	s := newServer(db, team.URL, testAud, testOrigin, testAdmin, testSecret, web)
 	s.captcha = &turnstile{secret: "ts-secret", verifyURL: siteverify.URL, hostname: "tolon.example.test", client: http.DefaultClient}
 	s.sitekey = "site-key"
-	e := &env{s: s, mail: &fakeMail{sent: make(chan [2]string, 64), subjects: make(chan string, 64)}, t: t, now: time.Now()}
+	e := &env{certHits: hits, s: s, mail: &fakeMail{sent: make(chan [2]string, 64), subjects: make(chan string, 64)}, t: t, now: time.Now()}
 	s.mail = e.mail
 	s.now = func() time.Time { return e.now }
 	if err := s.auth.refresh(); err != nil {
@@ -647,6 +653,26 @@ func TestAdminJWT(t *testing.T) {
 	json.Unmarshal(e.do("GET", "/api/results", "", map[string]string{"Cf-Access-Jwt-Assertion": e.tok(testAdmin, nil)}).Body.Bytes(), &res)
 	if res.Total != 1 || res.Favourites["lon"] != 1 || res.Reactions["tol"]["no"] != 1 || res.Comments[0]["email"] != "v@x.test" || res.Comments[0]["at"] != "2026-01-01T00:00:00Z" {
 		t.Fatalf("results: %+v", res)
+	}
+}
+
+func TestJWKSRefreshSingleFlight(t *testing.T) {
+	e := newEnv(t)
+	later := time.Now().Add(time.Minute) // past the 30 s refetch guard
+	e.s.auth.now = func() time.Time { return later }
+	before := e.certHits.Load()
+	tok := sign(t, testKey, "rotated", map[string]any{"aud": testAud, "iss": e.s.auth.issuer, "email": testAdmin, "exp": later.Unix() + 60})
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			e.s.auth.verify(tok)
+		}()
+	}
+	wg.Wait()
+	if n := e.certHits.Load() - before; n != 1 {
+		t.Fatalf("%d certs fetches for one unknown kid, want 1", n)
 	}
 }
 
