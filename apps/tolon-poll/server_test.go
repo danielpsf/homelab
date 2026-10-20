@@ -67,6 +67,42 @@ var _ = Describe("HTTP server", func() {
 		})
 	})
 
+	Describe("caching at the edge", func() {
+		BeforeEach(func() {
+			writeI18n(e.s.webDir, map[string]string{"de": `{}`})
+			for _, f := range []string{"style.css", "app.js", "assets/lon/icon.png", "fonts/x.woff2", "flags/il.svg", "preview/index.html"} {
+				p := filepath.Join(e.s.webDir, f)
+				Expect(os.MkdirAll(filepath.Dir(p), 0o755)).To(Succeed())
+				Expect(os.WriteFile(p, []byte("x"), 0o644)).To(Succeed())
+			}
+		})
+
+		DescribeTable("sets Cache-Control by file type and version stamp",
+			func(target, want string) {
+				rec := e.do("GET", target, "", nil)
+				Expect(rec).To(HaveHTTPStatus(http.StatusOK))
+				if want == "" {
+					Expect(rec.Header().Get("Cache-Control")).To(BeEmpty())
+				} else {
+					Expect(rec).To(HaveHTTPHeaderWithValue("Cache-Control", want))
+				}
+			},
+			Entry("the landing page", "/", "no-cache"),
+			Entry("the poll page", "/pool", "no-cache"),
+			Entry("a directory index", "/preview/", "no-cache"),
+			Entry("a stylesheet", "/style.css", "no-cache"),
+			Entry("a script", "/app.js", "no-cache"),
+			Entry("options JSON", "/options.json", "no-cache"),
+			Entry("a translation", "/i18n/de.json", "no-cache"),
+			Entry("a stamped stylesheet", "/style.css?v=3f2a9c", "public, max-age=31536000, immutable"),
+			Entry("a stamped script", "/app.js?v=3f2a9c", "public, max-age=31536000, immutable"),
+			Entry("a stamped image", "/assets/lon/icon.png?v=1", "public, max-age=31536000, immutable"),
+			Entry("an unstamped image", "/assets/lon/icon.png", ""),
+			Entry("an unstamped font", "/fonts/x.woff2", ""),
+			Entry("an unstamped flag", "/flags/il.svg", ""),
+		)
+	})
+
 	Describe("GET /api/config", func() {
 		It("serves the sitekey and a null delete_after when no deadline is set", func() {
 			rec := e.do("GET", "/api/config", "", nil)

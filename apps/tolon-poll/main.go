@@ -15,6 +15,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -354,8 +355,27 @@ func (s *server) static() http.Handler {
 				return
 			}
 		}
+		if cc := cacheControl(r); cc != "" {
+			w.Header().Set("Cache-Control", cc)
+		}
 		fs.ServeHTTP(w, r)
 	})
+}
+
+// cacheControl keeps pages, styles, scripts and JSON fresh at the Cloudflare edge, lets
+// ?v=<hash> stamped assets be cached for a year, and leaves fonts and images unstamped
+// at the edge default.
+func cacheControl(r *http.Request) string {
+	ext := strings.ToLower(path.Ext(r.URL.Path))
+	switch {
+	case ext == "" || ext == ".html":
+		return "no-cache"
+	case r.URL.Query().Has("v"):
+		return "public, max-age=31536000, immutable"
+	case ext == ".css" || ext == ".js" || ext == ".mjs" || ext == ".json":
+		return "no-cache"
+	}
+	return ""
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {
