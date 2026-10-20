@@ -448,3 +448,48 @@ services:
     networks:
       - tunnel
       - wazuh
+
+  # ---------------------------------------------------------------------------
+  # Tolon Poll — app icon feedback poll (email one-time codes; results behind Access)
+  # ---------------------------------------------------------------------------
+  tolon-poll:
+    build: ./apps/tolon-poll
+    image: homelab-tolon-poll
+    container_name: tolon-poll
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    environment:
+      - TZ=${TZ}
+      - CF_ACCESS_TEAM_DOMAIN=https://${CF_ACCESS_TEAM}.cloudflareaccess.com
+      - CF_ACCESS_AUD=${TOLON_POLL_ACCESS_AUD}
+      - PUBLIC_ORIGIN=https://tolon.${DOMAIN}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - SESSION_SECRET=${TOLON_POLL_SESSION_SECRET}
+      - TURNSTILE_SITEKEY=${TURNSTILE_SITEKEY}
+      - TURNSTILE_SECRET=${TURNSTILE_SECRET}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
+    volumes:
+      - ./data/tolon-poll:/data
+      - ${TOLON_POLL_WEB_DIR:-./apps/tolon-poll/web}:/web:ro
+    networks:
+      - tunnel
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "/tolon-poll", "-healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
