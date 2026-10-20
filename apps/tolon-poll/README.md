@@ -123,13 +123,46 @@ Each file has mode 600 and belongs to uid 65532, the container user.
 
 ```bash
 docker compose up -d --build tolon-poll
-docker run --rm -v "$PWD/apps/tolon-poll":/src -w /src golang:1.26.10-alpine go test ./...
 ```
 
 The image is a static Go binary (`modernc.org/sqlite`, no cgo) on
-`gcr.io/distroless/static-debian12:nonroot`. The container runs as `PUID:PGID` with a
-read-only root filesystem and no capabilities. Its only network is `tunnel`. SQLite
-runs in WAL mode at `/data/poll.db` (`./data/tolon-poll` on the host).
+`gcr.io/distroless/static-debian12:nonroot`, built in a multi-stage Dockerfile with both
+base images pinned by digest. The container runs as uid 65532 (the distroless `nonroot`
+user) with a read-only root filesystem and no capabilities. Its only network is `tolon`,
+which it shares with `cloudflared` alone. SQLite runs in WAL mode at `/data/poll.db`
+(`./data/tolon-poll` on the host).
+
+### Tests
+
+The tests are a [Ginkgo v2](https://onsi.github.io/ginkgo/) suite with
+[Gomega](https://onsi.github.io/gomega/) matchers, so each spec reads as a sentence about
+behaviour. Run them in a throwaway container from the repository root:
+
+```bash
+# full run: random order, race detector (needs cgo, so the Debian golang image)
+docker run --rm -v "$PWD/apps/tolon-poll":/src -w /src golang:1.26.10 \
+  go run github.com/onsi/ginkgo/v2/ginkgo -r --randomize-all --race --cover
+
+# plain go test works too, for example on the Alpine image
+docker run --rm -v "$PWD/apps/tolon-poll":/src -w /src golang:1.26.10-alpine go test ./...
+```
+
+| File | What it specifies |
+|------|-------------------|
+| `tolonpoll_suite_test.go` | Suite bootstrap (`RunSpecs`) |
+| `helpers_test.go` | Test harness: an isolated server per spec with its own database, web dir, fake Access team domain (JWKS) and fake Turnstile siteverify |
+| `auth_test.go` | Admin results behind Cloudflare Access: JWT checks (table), cookie fallback, `is_admin`, the results payload, single-flight certs refresh |
+| `otp_test.go` | One-time codes: requests, Turnstile, limits, lockout, verification and the session cookie, locales and email text, RFC 2047 subjects, SMTP error classes |
+| `vote_test.go` | Voting: sessions, one vote per email, validation (table), CSRF (table), logout |
+| `server_test.go` | Routes, security headers, `/api/config`, the retention deadline, rate limits and IP keys, the token bucket, secrets, database file modes |
+| `hardening_test.go` | Path traversal, SMTP TLS refusal against a fake SMTP server, Access key rotation, `prune`, logs without email addresses |
+
+Every spec builds its own environment in a `BeforeEach` and cleans up with `DeferCleanup`,
+so the suite runs in any order. Mail is sent from a goroutine, so specs wait for it with
+`Eventually` and check that nothing is sent with `Consistently`. App logs go to
+`GinkgoWriter` and show only for a failing spec. Ginkgo and Gomega are test-only
+dependencies: the release binary does not link them (`go version -m` lists only the
+SQLite modules).
 
 ## Container
 
