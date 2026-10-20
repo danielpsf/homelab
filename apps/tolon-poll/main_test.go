@@ -550,6 +550,51 @@ func TestRateLimit(t *testing.T) {
 	}
 }
 
+func TestRetention(t *testing.T) {
+	e := newEnv(t)
+	e.s.contact = "poll@example.test"
+	if rec := e.do("GET", "/api/config", "", nil); !strings.Contains(rec.Body.String(), `"delete_after":null`) {
+		t.Fatalf("config without deadline: %s", rec.Body)
+	}
+	e.s.closeAt = time.Date(2027, 1, 18, 23, 59, 59, 0, time.UTC)
+	rec := e.do("GET", "/api/config", "", nil)
+	var cfg map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &cfg)
+	if cfg["delete_after"] != "2027-01-18T23:59:59Z" || cfg["contact_email"] != "poll@example.test" ||
+		cfg["turnstile_sitekey"] != "site-key" || len(cfg["processors"].([]any)) != 2 {
+		t.Fatalf("config: %s", rec.Body)
+	}
+	c := e.login("keep@example.test")
+	if rec := e.do("POST", "/api/vote", `{"favourite":"lon"}`, jsonPost, c); rec.Code != 201 {
+		t.Fatalf("vote: %d", rec.Code)
+	}
+	e.requestCode("pending@example.test")
+	count := func() (n int) {
+		for _, tb := range []string{"votes", "sessions", "otp_codes", "otp_sends"} {
+			var k int
+			e.s.db.QueryRow(`SELECT COUNT(*) FROM ` + tb).Scan(&k)
+			n += k
+		}
+		return n
+	}
+	e.s.closeAt = e.now.Add(time.Hour)
+	e.s.prune()
+	if count() == 0 {
+		t.Fatal("data deleted before the deadline")
+	}
+	e.now = e.now.Add(time.Hour + time.Second)
+	e.s.prune()
+	if n := count(); n != 0 {
+		t.Fatalf("%d rows left after the deadline", n)
+	}
+	if rec := e.do("POST", "/api/vote", `{"favourite":"lon"}`, jsonPost, c); rec.Code != 410 {
+		t.Fatalf("vote after close: %d", rec.Code)
+	}
+	if rec := e.do("POST", "/api/otp/request", `{"email":"x@example.test","turnstile":"good"}`, jsonPost); rec.Code != 410 {
+		t.Fatalf("code after close: %d", rec.Code)
+	}
+}
+
 func TestPublicRoutesAndHeaders(t *testing.T) {
 	e := newEnv(t)
 	if rec := e.do("GET", "/", "", nil); rec.Code != 200 || !strings.Contains(rec.Body.String(), "landing") {

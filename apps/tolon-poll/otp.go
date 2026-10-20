@@ -157,6 +157,10 @@ func (m *smtpMailer) send(to, subject, body string) error {
 // --- Handlers ----------------------------------------------------------------
 
 func (s *server) handleOTPRequest(w http.ResponseWriter, r *http.Request) {
+	if s.closed() {
+		writeJSON(w, http.StatusGone, errBody("poll_closed"))
+		return
+	}
 	if s.mail == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("email_unavailable"))
 		return
@@ -320,7 +324,18 @@ func (s *server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
+// closed reports whether the retention deadline (POLL_DELETE_AFTER) has passed.
+func (s *server) closed() bool { return !s.closeAt.IsZero() && s.now().After(s.closeAt) }
+
 func (s *server) prune() {
+	if s.closed() {
+		for _, t := range []string{"votes", "sessions", "otp_codes", "otp_sends"} {
+			if _, err := s.db.Exec(`DELETE FROM ` + t); err != nil {
+				log.Printf("retention delete %s: %v", t, err)
+			}
+		}
+		return
+	}
 	now := s.now().Unix()
 	for _, q := range []string{
 		`DELETE FROM sessions WHERE expires_at <= ?`,

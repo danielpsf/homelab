@@ -50,6 +50,8 @@ type server struct {
 	mail    mailer // nil when SMTP is not configured
 	secret  []byte
 	sitekey string
+	contact string    // privacy contact address, served to the page
+	closeAt time.Time // POLL_DELETE_AFTER: votes close and all personal data is deleted after it
 	webDir  string
 	origin  string
 	admin   string
@@ -89,6 +91,13 @@ func main() {
 	}
 	s := newServer(db, cfg["CF_ACCESS_TEAM_DOMAIN"], cfg["CF_ACCESS_AUD"], cfg["PUBLIC_ORIGIN"], cfg["ADMIN_EMAIL"], cfg["SESSION_SECRET"], envOr("WEB_DIR", "/web"))
 	s.sitekey = os.Getenv("TURNSTILE_SITEKEY")
+	s.contact = os.Getenv("CONTACT_EMAIL")
+	if v := os.Getenv("POLL_DELETE_AFTER"); v != "" {
+		if s.closeAt, err = time.Parse(time.RFC3339, v); err != nil {
+			log.Fatalf("POLL_DELETE_AFTER: %v", err)
+		}
+		s.prune() // enforce at startup too, not only on the ticker
+	}
 	if sec := os.Getenv("TURNSTILE_SECRET"); sec != "" {
 		s.captcha = &turnstile{secret: sec, verifyURL: "https://challenges.cloudflare.com/turnstile/v0/siteverify",
 			hostname: hostOf(s.origin), client: &http.Client{Timeout: 10 * time.Second}}
@@ -198,7 +207,12 @@ func openDB(path string) (*sql.DB, error) {
 func (s *server) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/config", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]string{"turnstile_sitekey": s.sitekey})
+		var deleteAfter any // null when no deadline is set
+		if !s.closeAt.IsZero() {
+			deleteAfter = s.closeAt.UTC().Format(time.RFC3339)
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"turnstile_sitekey": s.sitekey, "contact_email": s.contact,
+			"delete_after": deleteAfter, "processors": []string{"cloudflare", "resend"}})
 	})
 	mux.HandleFunc("GET /api/options", s.handleOptions)
 	mux.HandleFunc("GET /api/me", s.handleMe)
@@ -363,6 +377,10 @@ func (s *server) handleOptions(w http.ResponseWriter, r *http.Request) {
 var reactionValues = map[string]bool{"love": true, "ok": true, "no": true}
 
 func (s *server) handleVote(w http.ResponseWriter, r *http.Request) {
+	if s.closed() {
+		writeJSON(w, http.StatusGone, errBody("poll_closed"))
+		return
+	}
 	email := s.sessionEmail(r)
 	if email == "" {
 		writeJSON(w, http.StatusUnauthorized, errBody("unauthorized"))
