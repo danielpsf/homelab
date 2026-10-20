@@ -13,8 +13,8 @@ resource "cloudflare_ruleset" "tolon_rate_limit" {
   rules = [
     {
       ref         = "tolon_poll_per_ip"
-      description = "20 requests per 10 s per IP on the poll host"
-      expression  = "(http.host eq \"tolon.${var.domain}\")"
+      description = "20 API requests per 10 s per IP on the poll host"
+      expression  = "(http.host eq \"tolon.${var.domain}\" and starts_with(http.request.uri.path, \"/api/\"))"
       action      = "block"
       ratelimit = {
         characteristics     = ["cf.colo.id", "ip.src"]
