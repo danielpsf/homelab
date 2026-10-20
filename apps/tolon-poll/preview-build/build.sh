@@ -6,7 +6,7 @@
 # ui/ is copied to a temp dir. Needs git, node and npm. Output goes to ../web/preview/.
 set -euo pipefail
 
-REV=b178e08 # tolon main used for the published preview
+REV=ba26289 # tolon main used for the published preview
 if [[ "${1:-}" == "--rev" ]]; then
   REV="${2:?--rev needs a commit}"
   shift 2
@@ -47,4 +47,6 @@ rm -rf "$OUT/assets"
 cp -R dist/assets "$OUT/assets"
 cp dist/app.html dist/interrupt.html "$OUT/"
 cp "$HERE"/shell/* "$OUT/"
+# Version the script and stylesheet URLs in every page (see tools/stamp-assets.mjs).
+[[ -f "$HERE/../tools/stamp-assets.mjs" ]] && node "$HERE/../tools/stamp-assets.mjs" "$OUT/.."
 echo "preview written to $OUT"

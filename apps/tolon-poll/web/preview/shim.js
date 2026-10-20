@@ -7,12 +7,20 @@
   // Sample texts follow the language the UI is shown in (?lang=); the way back follows the page language (?sl=).
   var SAMPLE = {
     "pt-BR": { c1: "Trabalho", c2: "Time de plataforma", meeting: "Reunião semanal da plataforma" },
+    de: { c1: "Arbeit", c2: "Plattform-Team", meeting: "Wöchentliches Plattform-Meeting" },
     "en-US": { c1: "Work", c2: "Platform team", meeting: "Platform weekly sync" },
+    es: { c1: "Trabajo", c2: "Equipo de plataforma", meeting: "Reunión semanal de plataforma" },
+    ar: { c1: "العمل", c2: "فريق المنصة", meeting: "الاجتماع الأسبوعي للمنصة" },
+    tr: { c1: "İş", c2: "Platform ekibi", meeting: "Haftalık platform toplantısı" },
+    hi: { c1: "काम", c2: "प्लेटफ़ॉर्म टीम", meeting: "प्लेटफ़ॉर्म की साप्ताहिक मीटिंग" },
+    "zh-CN": { c1: "工作", c2: "平台团队", meeting: "平台周会" },
+    ja: { c1: "仕事", c2: "プラットフォームチーム", meeting: "プラットフォーム定例" },
+    he: { c1: "עבודה", c2: "צוות הפלטפורמה", meeting: "סנכרון שבועי של הפלטפורמה" },
   };
   var BACK = {
     "pt-BR": "Voltar para a prévia dos ícones", de: "Zurück zur Icon-Vorschau", "en-US": "Back to the icon preview",
     es: "Volver a la vista previa de iconos", ar: "العودة إلى معاينة الأيقونات", tr: "Simge önizlemesine dön",
-    hi: "आइकन पूर्वावलोकन पर वापस जाएँ", "zh-CN": "返回图标预览", ja: "アイコンのプレビューに戻る",
+    hi: "आइकन पूर्वावलोकन पर वापस जाएँ", "zh-CN": "返回图标预览", ja: "アイコンのプレビューに戻る", he: "חזרה לתצוגה המקדימה של הסמלים",
   };
   var TEXT = SAMPLE[qs.get("lang")] || SAMPLE["en-US"];
   var BACK_TEXT = BACK[qs.get("sl")] || BACK["en-US"];

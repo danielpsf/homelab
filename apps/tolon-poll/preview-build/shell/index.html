@@ -6,15 +6,16 @@
   <meta name="color-scheme" content="light dark">
   <meta name="robots" content="noindex">
   <title data-i18n="pv.title">Tolon preview</title>
-  <link rel="stylesheet" href="/swiss-moss.css">
-  <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/preview/preview.css">
-  <script src="/i18n.js"></script>
+  <link rel="stylesheet" href="/swiss-moss.css?v=3981e42cc2">
+  <link rel="stylesheet" href="/style.css?v=3981e42cc2">
+  <link rel="stylesheet" href="/preview/preview.css?v=3981e42cc2">
+  <script src="/i18n.js?v=3981e42cc2"></script>
+  <script src="/swiss-moss.js?v=3981e42cc2" defer></script>
 </head>
 <body>
   <div class="page">
     <div class="top">
-      <span class="brand">Tolon</span>
+      <a class="brand" href="/" data-home>Tolon</a>
       <a class="who-link" href="/pool" data-i18n="pv.back">Back to the poll</a>
     </div>
 
@@ -39,7 +40,6 @@
         <a class="sm-btn primary lg" id="show" href="/preview/interrupt.html" data-i18n="pv.show">Show the reminder</a>
         <a class="sm-btn lg" id="cal-link" href="/preview/app.html#/calendars" data-i18n="pv.cal">Open the calendars page</a>
       </div>
-      <p class="sm-hint" id="app-note" hidden></p>
       <p class="sm-hint desktop-only" data-i18n="pv.hint">In the reminder, Enter, Esc, D and Space work as they do in the app. Any of them brings you back here.</p>
       <p class="phone-note note" data-i18n="pv.phone">The real screens are made for a desktop. Open this page on a computer to try the reminder and the calendars page. The pictures below show the same screens.</p>
       <div id="status" class="status" role="status" aria-live="polite"></div>
@@ -72,7 +72,11 @@
         <figcaption id="scene-cap"></figcaption>
       </figure>
     </section>
+
+    <footer class="foot">
+      <p class="foot-home"><a class="sm-btn quiet sm" href="/" data-home data-i18n="common.backHome">Back to the start</a></p>
+    </footer>
   </div>
-  <script src="/preview/preview.js"></script>
+  <script src="/preview/preview.js?v=3981e42cc2"></script>
 </body>
 </html>

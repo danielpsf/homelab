@@ -24,6 +24,8 @@ const swaps = [
   ["Google:", "Account:"],
   ["googleName", "accountName"],
   ["kindGoogle", "kindAccount"],
+  // Catalogues in other languages carry the vendor name inside their own words ("Google カレンダー"); the sample data has no such account.
+  ["Google", "Account"],
 ];
 for (const f of walk(dist).filter((f) => f.endsWith(".js"))) {
   let s = fs.readFileSync(f, "utf8");

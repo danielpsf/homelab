@@ -2,9 +2,9 @@
   "use strict";
 
   var params = new URLSearchParams(window.location.search);
-  // Language the real Tolon UI is shown in, by page language. The app has these catalogues today;
-  // every other page language shows the app in en-US. Add a row when the app ships a language.
-  var UI_LANG = { "pt-BR": "pt-BR", "en-US": "en-US" };
+  // Language the real Tolon UI is shown in, by page language. The app has a catalogue for each of them
+  // (tolon ui/src/i18n); a page language missing here would show the app in en-US.
+  var UI_LANG = { "pt-BR": "pt-BR", de: "de", "en-US": "en-US", es: "es", ar: "ar", tr: "tr", hi: "hi", "zh-CN": "zh-CN", ja: "ja", he: "he" };
   var options = [];
   var T = function (k, p) { return window.i18n.t(k, p); };
 
@@ -57,18 +57,13 @@
   }
 
   window.i18n.ready.then(function () {
-    if (!UI_LANG[window.i18n.locale]) {
-      var l = window.i18n.locales.filter(function (x) { return x.code === window.i18n.locale; })[0];
-      $("app-note").textContent = T("pv.appNote", { language: l.name });
-      $("app-note").hidden = false;
-    }
     var done = params.get("done");
     if (done && /^[a-z_]+$/.test(done) && T("pv.msg." + done) !== "pv.msg." + done) {
       var p = document.createElement("p");
       p.textContent = T("pv.msg." + done);
       $("status").appendChild(p);
     }
-    return getJSON("/options.json").catch(function () { return getJSON("/api/options"); }).then(window.i18n.localizeOptions);
+    return getJSON("/options.json" + window.i18n.vq).catch(function () { return getJSON("/api/options"); }).then(window.i18n.localizeOptions);
   }).then(function (list) {
     options = list;
     var want = params.get("icon");
