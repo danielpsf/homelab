@@ -188,9 +188,9 @@ var _ = Describe("HTTP server", func() {
 				To(HaveHTTPStatus(http.StatusTooManyRequests))
 		})
 
-		It("allows 120 requests per minute per IP on the whole host", func() {
+		It("allows 1200 requests per minute per IP on the whole host", func() {
 			host := map[string]string{"CF-Connecting-IP": "203.0.113.9"}
-			for i := 0; i < 120; i++ {
+			for i := 0; i < 1200; i++ {
 				e.do("GET", "/pool", "", host)
 			}
 			Expect(e.do("GET", "/pool", "", host)).To(HaveHTTPStatus(http.StatusTooManyRequests))

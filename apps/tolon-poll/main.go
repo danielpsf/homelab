@@ -163,7 +163,7 @@ func newServer(db *sql.DB, team, aud, origin, admin, secret, webDir string) *ser
 		admin:       strings.ToLower(strings.TrimSpace(admin)),
 		now:         time.Now,
 		codesPerDay: 500,
-		hostLimit:   newLimiter(120, time.Minute),
+		hostLimit:   newLimiter(1200, time.Minute), // a page load is ~40 files; this only catches floods
 		apiLimit:    newLimiter(30, time.Minute),
 		otpIPLimit:  newLimiter(10, time.Hour),
 		voteLimit:   newLimiter(5, time.Hour),
