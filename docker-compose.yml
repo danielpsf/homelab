@@ -479,6 +479,9 @@ services:
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASS_FILE=/run/secrets/tolon_smtp_pass
       - SMTP_FROM=${SMTP_FROM}
+      - CONTACT_EMAIL=${TOLON_POLL_CONTACT_EMAIL}
+      - POLL_DELETE_AFTER=${POLL_DELETE_AFTER}
+      - CODES_PER_DAY=${TOLON_POLL_CODES_PER_DAY:-500}
     volumes:
       - ./data/tolon-poll:/data
       - ${TOLON_POLL_WEB_DIR:-./apps/tolon-poll/web}:/web:ro
