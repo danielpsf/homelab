@@ -27,10 +27,11 @@
 :root:lang(ar) *,:root:lang(hi) *,:root:lang(zh-CN) *,:root:lang(ja) *{letter-spacing:normal!important}
 :root:lang(ar) :is(h1,h2,h3,.sm-display-m),:root:lang(hi) :is(h1,h2,h3,.sm-display-m){line-height:1.35!important}
 :root:lang(zh-CN) :is(h1,h2,h3),:root:lang(ja) :is(h1,h2,h3){line-height:1.25!important}
-.lang-menu [lang="ar"]{font-family:Inter,var(--ff-ar)}
-.lang-menu [lang="hi"]{font-family:Inter,var(--ff-hi)}
-.lang-menu [lang="zh-CN"]{font-family:Inter,var(--ff-zh)}
-.lang-menu [lang="ja"]{font-family:Inter,var(--ff-ja)}
+.sm-menu-list [lang="ar"]{font-family:Inter,var(--ff-ar)}
+.sm-menu-list [lang="hi"]{font-family:Inter,var(--ff-hi)}
+.sm-menu-list [lang="zh-CN"]{font-family:Inter,var(--ff-zh)}
+.sm-menu-list [lang="ja"]{font-family:Inter,var(--ff-ja)}
+.sm-menu-list [lang="he"]{font-family:Inter,var(--ff-he)}
 
 [hidden]{display:none!important}
 /* Swiss Moss muted grey is 4.45:1 on paper; darken it for small text in light mode (AA needs 4.5:1). */
@@ -158,17 +159,13 @@
 .cta{margin:32px 0 0}
 .hero .links .sm-btn,.cta .sm-btn{text-decoration:none}
 
-/* language switcher */
+/* language switcher: Swiss Moss menu button (sm-menu); only the flag and the pending state are local */
 .i18n-pending body{visibility:hidden}
-.lang{position:relative}
-.lang-btn{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;border:1px solid var(--sm-line-strong);border-radius:var(--sm-radius-pill);background:var(--sm-card);color:var(--sm-ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
-.lang-btn:hover{background:var(--sm-paper-deep)}
-.lang .flag{display:block;width:20px;height:15px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.18);flex:none}
-.lang-menu{position:absolute;inset-inline-end:0;top:calc(100% + 6px);z-index:40;min-width:230px;margin:0;padding:6px;list-style:none;border:1px solid var(--sm-line);border-radius:var(--sm-radius-m);background:var(--sm-card);box-shadow:var(--sm-shadow-lift)}
-.lang-menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:var(--sm-radius-s);background:none;color:var(--sm-ink);font:inherit;font-size:14px;text-align:start;cursor:pointer}
-.lang-menu button:hover{background:var(--sm-paper-deep)}
-.lang-menu button[aria-checked="true"]{background:var(--sm-mist);font-weight:600}
-.lang-menu button:focus-visible,.lang-btn:focus-visible{outline:2px solid var(--sm-focus);outline-offset:2px}
+.lang .flag{display:block;width:20px;height:15px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+.lang .sm-btn{gap:8px;font-weight:600}
+.lang .sm-menu-list{min-width:230px}
+.foot-home{margin:0 0 12px}
+.foot-home a{text-decoration:none}
 .privacy-title{font-family:var(--sm-font-display);font-size:18px;letter-spacing:-.01em;margin:0 0 8px}
 .privacy ul{margin:0;padding-inline-start:20px}
 .privacy li{margin:0 0 6px}

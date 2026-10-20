@@ -20,6 +20,7 @@
   // Any pt-* is Brazilian Portuguese, any en-* is American English, any es-*, zh-* and so on map to the one shipped variant.
   var BY_LANGUAGE = { pt: "pt-BR", en: "en-US", de: "de", es: "es", ar: "ar", tr: "tr", hi: "hi", zh: "zh-CN", ja: "ja" };
 
+
   var root = document.documentElement;
   root.classList.add("i18n-pending");
   var pendingTimer = setTimeout(function () { root.classList.remove("i18n-pending"); }, 3000);
@@ -142,21 +143,23 @@
     img.alt = "";
     img.width = 20;
     img.height = 15;
-    img.className = "flag";
+    img.className = "flag sm-menu-icon";
     return img;
   }
 
+  // Swiss Moss menu button (class sm-menu, data-sm-menu); swiss-moss.js adds the keyboard behaviour.
   function buildSwitcher() {
     var top = document.querySelector(".top");
     if (!top) return;
     var cur = LOCALES.filter(function (l) { return l.code === locale; })[0];
     var wrap = document.createElement("div");
-    wrap.className = "lang";
+    wrap.className = "lang sm-menu end";
+    wrap.setAttribute("data-sm-menu", "");
     var btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "lang-btn";
+    btn.className = "sm-btn sm lang-btn";
     btn.id = "lang-btn";
-    btn.setAttribute("aria-haspopup", "true");
+    btn.setAttribute("aria-haspopup", "menu");
     btn.setAttribute("aria-expanded", "false");
     btn.setAttribute("aria-controls", "lang-menu");
     btn.setAttribute("aria-label", t("lang.label") + ": " + cur.name);
@@ -165,12 +168,12 @@
     code.textContent = cur.short;
     btn.appendChild(code);
     var menu = document.createElement("ul");
-    menu.className = "lang-menu";
+    menu.className = "sm-menu-list";
     menu.id = "lang-menu";
     menu.setAttribute("role", "menu");
     menu.setAttribute("aria-label", t("lang.label"));
     menu.hidden = true;
-    var items = LOCALES.map(function (l) {
+    LOCALES.forEach(function (l) {
       var li = document.createElement("li");
       li.setAttribute("role", "none");
       var b = document.createElement("button");
@@ -178,51 +181,39 @@
       b.setAttribute("role", "menuitemradio");
       b.setAttribute("aria-checked", String(l.code === locale));
       b.setAttribute("lang", l.code);
+      b.setAttribute("data-value", l.code);
       b.appendChild(flagImg(l));
       var s = document.createElement("span");
       s.textContent = l.name;
       b.appendChild(s);
-      b.addEventListener("click", function () { choose(l.code); close(true); });
       li.appendChild(b);
       menu.appendChild(li);
-      return b;
     });
-    function open(focusIdx) {
-      menu.hidden = false;
-      btn.setAttribute("aria-expanded", "true");
-      var idx = typeof focusIdx === "number" ? focusIdx : LOCALES.map(function (l) { return l.code; }).indexOf(locale);
-      items[idx].focus();
-    }
-    function close(refocus) {
-      menu.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-      if (refocus) btn.focus();
-    }
-    btn.addEventListener("click", function () { if (menu.hidden) open(); else close(false); });
-    btn.addEventListener("keydown", function (e) {
-      if (e.key === "ArrowDown") { e.preventDefault(); open(); }
-      else if (e.key === "ArrowUp") { e.preventDefault(); open(items.length - 1); }
-    });
-    menu.addEventListener("keydown", function (e) {
-      var i = items.indexOf(document.activeElement);
-      if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
-      else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
-      else if (e.key === "Home") { e.preventDefault(); items[0].focus(); }
-      else if (e.key === "End") { e.preventDefault(); items[items.length - 1].focus(); }
-      else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(true); }
-      else if (e.key === "Tab") close(false);
-    });
-    document.addEventListener("click", function (e) { if (!wrap.contains(e.target)) close(false); });
     wrap.appendChild(btn);
     wrap.appendChild(menu);
+    wrap.addEventListener("sm:select", function (e) { choose(e.detail.value); });
     top.appendChild(wrap);
+    if (window.SwissMoss) window.SwissMoss.menu.init(wrap);
+  }
+
+  // Links that lead home keep an explicit ?lang= when the page was opened with one.
+  function homeLinks() {
+    var q = new URLSearchParams(window.location.search).get("lang");
+    document.querySelectorAll("a[data-home]").forEach(function (a) {
+      a.setAttribute("href", q ? "/?lang=" + encodeURIComponent(q) : "/");
+    });
   }
 
   function finish() {
     root.lang = locale;
     root.dir = LOCALES.filter(function (l) { return l.code === locale; })[0].dir;
     apply();
-    buildSwitcher();
+    homeLinks();
+    // swiss-moss.js is deferred and runs before DOMContentLoaded; build the menu once it is there (or after load).
+    var built = false;
+    var build = function () { if (!built) { built = true; buildSwitcher(); } };
+    if (window.SwissMoss || document.readyState === "complete") build();
+    else { document.addEventListener("DOMContentLoaded", build); window.addEventListener("load", build); }
     clearTimeout(pendingTimer);
     root.classList.remove("i18n-pending");
   }
