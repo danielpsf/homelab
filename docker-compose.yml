@@ -28,6 +28,12 @@ volumes:
 secrets:
   portainer_admin_password:
     file: ./secrets/portainer_admin_password
+  tolon_session_secret:
+    file: ./secrets/tolon_session_secret
+  tolon_smtp_pass:
+    file: ./secrets/tolon_smtp_pass
+  tolon_turnstile_secret:
+    file: ./secrets/tolon_turnstile_secret
 
 services:
   # ---------------------------------------------------------------------------
@@ -459,24 +465,27 @@ services:
     image: homelab-tolon-poll
     container_name: tolon-poll
     restart: unless-stopped
-    user: "${PUID}:${PGID}"
     environment:
       - TZ=${TZ}
       - CF_ACCESS_TEAM_DOMAIN=https://${CF_ACCESS_TEAM}.cloudflareaccess.com
       - CF_ACCESS_AUD=${TOLON_POLL_ACCESS_AUD}
       - PUBLIC_ORIGIN=https://tolon.${DOMAIN}
       - ADMIN_EMAIL=${ADMIN_EMAIL}
-      - SESSION_SECRET=${TOLON_POLL_SESSION_SECRET}
+      - SESSION_SECRET_FILE=/run/secrets/tolon_session_secret
       - TURNSTILE_SITEKEY=${TURNSTILE_SITEKEY}
-      - TURNSTILE_SECRET=${TURNSTILE_SECRET}
+      - TURNSTILE_SECRET_FILE=/run/secrets/tolon_turnstile_secret
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
-      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_PASS_FILE=/run/secrets/tolon_smtp_pass
       - SMTP_FROM=${SMTP_FROM}
     volumes:
       - ./data/tolon-poll:/data
       - ${TOLON_POLL_WEB_DIR:-./apps/tolon-poll/web}:/web:ro
+    secrets:
+      - tolon_session_secret
+      - tolon_smtp_pass
+      - tolon_turnstile_secret
     networks:
       - tolon
     security_opt:
