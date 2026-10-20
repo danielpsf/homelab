@@ -200,7 +200,7 @@ Four more groups of resources are conditional:
 |------|----------|--------|----------------------|
 | `resend.tf` | DNS records for the Resend sending domain (DKIM, SPF, MX, the `rsend` tracking CNAME, DMARC with `p=none`), one per entry in `resend_dns_records` | The map is gitignored in `terraform.tfvars`; empty means none | Zone > DNS > Edit |
 | `turnstile.tf` | Turnstile widget for the code form | `enable_tolon_turnstile = true` | Account > Turnstile > Edit |
-| `ratelimit.tf` | `http_ratelimit` ruleset: 20 requests per 10 s per IP and colo on the poll host, block for 10 s (the free plan allows one rule). Clients see Cloudflare error 1015. | `enable_tolon_rate_limit = true` | Zone > Zone WAF > Edit |
+| `ratelimit.tf` | `http_ratelimit` ruleset: 20 requests per 10 s per IP and colo on the poll host API (`/api/*` only), block for 10 s (the free plan allows one rule). Clients see Cloudflare error 1015. | `enable_tolon_rate_limit = true` | Zone > Zone WAF > Edit |
 | `email_routing.tf` | Email Routing settings, DNS, the verified admin address and a rule that forwards `tolon@<domain>` to the admin address | `enable_tolon_contact = true` | Zone > Email Routing Rules > Edit, Account > Email Routing Addresses > Edit |
 
 The Turnstile widget, the rate limit and the contact address are live, so all three switches are on in the real `terraform.tfvars`. Email Routing adds the MX and SPF records at the zone apex, and Cloudflare creates its own DKIM record, which is not in Terraform. The token in use also has Zone > Zone Settings > Edit. The runbook in [`apps/tolon-poll/README.md`](apps/tolon-poll/README.md) has the steps.

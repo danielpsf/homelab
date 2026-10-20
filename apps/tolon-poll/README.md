@@ -77,15 +77,18 @@ ships its other languages.
   startup and every 10 minutes. The live poll closes at the end of 18 January 2027.
 - **CSRF**: every POST needs `Content-Type: application/json` and an `Origin`
   equal to `PUBLIC_ORIGIN`.
-- **Limits**. Per IP, with token buckets that live in memory: 120 requests/min on the
+- **Limits**. Per IP, with token buckets that live in memory: 1200 requests/min on the
   whole host, 30/min on `/api/*` and 10 code requests/hour. The key is the
   `CF-Connecting-IP` address: IPv4 per address, IPv6 per /64. Per email, kept in SQLite
   and keyed by an HMAC of the address: 3 codes/hour and 5 codes per 24 h. 3 burnt codes
   (5 wrong attempts each) within 24 h lock the address out for 24 h. Votes allow 5 attempts/hour
   per email. Globally, `CODES_PER_DAY` code emails per 24 h (default 500), with a warning in the log
   at 80 %. Request bodies are capped at 16 KB, and the server has read, write and idle timeouts.
-  The edge rule in `terraform/ratelimit.tf` is live: 20 requests per 10 s per IP and
-  Cloudflare data centre, then a 10 s block (Cloudflare error 1015).
+  The edge rule in `terraform/ratelimit.tf` is live and counts only `/api/*`: 20 requests per
+  10 s per IP and Cloudflare data centre, then a 10 s block (Cloudflare error 1015). Pages and
+  static files are not counted at the edge, because one page load is about 40 requests.
+- **Caching**: HTML, CSS, JS and JSON are sent with `Cache-Control: no-cache`. Files requested
+  with a `?v=<hash>` stamp (`tools/stamp-assets.mjs`) are `public, max-age=31536000, immutable`.
 - **Headers on every response**: a strict CSP. The only external origin is
   `challenges.cloudflare.com`, for Turnstile. The app also sends `nosniff`,
   `Referrer-Policy: no-referrer`, a Permissions-Policy that denies all features, and
