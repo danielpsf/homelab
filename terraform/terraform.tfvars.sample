@@ -10,9 +10,12 @@
 #   - Account > Access: Apps and Policies > Edit
 #   - Zone > DNS > Edit
 #   - Zone > Zone > Read
-# Only when the matching switch below is on:
-#   - Account > Turnstile > Edit    (enable_tolon_turnstile)
-#   - Zone > Zone WAF > Edit        (enable_tolon_rate_limit)
+# Only when the matching switch below is on (shown as in the token editor):
+#   - Account > Turnstile > Edit             (Turnstile Sites Write; enable_tolon_turnstile)
+#   - Zone > Zone WAF > Edit                 (Zone WAF Write; enable_tolon_rate_limit)
+#   - Zone > Email Routing Rules > Edit      (enable_tolon_contact)
+#   - Account > Email Routing Addresses > Edit (enable_tolon_contact)
+#   - Zone > Zone Settings > Edit            (Zone Settings Write; in use on the live token)
 cloudflare_api_token = "your-api-token-here"
 
 # Found at: Cloudflare Dashboard > your domain > Overview > API (right sidebar)
@@ -36,7 +39,12 @@ admin_email = "your-email@example.com"
 # }
 
 # Tolon poll Turnstile widget (default false). Needs the token permission above.
+# Turnstile, the rate limit and the contact address are all on in the live setup.
 # enable_tolon_turnstile = true
 
 # Tolon poll edge rate limit, 20 requests per 10 s per IP (default false). Needs the token permission above.
 # enable_tolon_rate_limit = true
+
+# Tolon poll contact address tolon@<domain>, forwarded to admin_email by Email Routing (default false).
+# Adds the apex MX and SPF records. Cloudflare creates its own DKIM record, which is not in Terraform.
+# enable_tolon_contact = true
