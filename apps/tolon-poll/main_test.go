@@ -456,6 +456,26 @@ func TestSecretEnv(t *testing.T) {
 	}
 }
 
+func TestDBFilesPrivate(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "data")
+	os.Mkdir(dir, 0o775)
+	path := filepath.Join(dir, "poll.db")
+	os.WriteFile(path, nil, 0o644)
+	db, err := openDB(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if fi, _ := os.Stat(dir); fi.Mode().Perm() != 0o700 {
+		t.Fatalf("dir mode %o", fi.Mode().Perm())
+	}
+	for _, f := range []string{path, path + "-wal", path + "-shm"} {
+		if fi, err := os.Stat(f); err == nil && fi.Mode().Perm() != 0o600 {
+			t.Fatalf("%s mode %o", filepath.Base(f), fi.Mode().Perm())
+		}
+	}
+}
+
 func TestEmailUnavailable(t *testing.T) {
 	e := newEnv(t)
 	e.s.mail = nil

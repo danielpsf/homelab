@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -88,6 +89,7 @@ func main() {
 	if len(cfg["SESSION_SECRET"]) < 32 {
 		log.Fatal("SESSION_SECRET must be at least 32 characters")
 	}
+	syscall.Umask(0o077) // database, WAL and SHM files are created owner-only
 	db, err := openDB(envOr("DB_PATH", "/data/poll.db"))
 	if err != nil {
 		log.Fatal(err)
@@ -230,7 +232,17 @@ func openDB(path string) (*sql.DB, error) {
 		email      TEXT NOT NULL,
 		expires_at INTEGER NOT NULL
 	);`)
-	return db, err
+	if err != nil {
+		return nil, err
+	}
+	// Tighten files that existed before the umask was in place.
+	_ = os.Chmod(filepath.Dir(path), 0o700)
+	for _, f := range []string{path, path + "-wal", path + "-shm"} {
+		if err := os.Chmod(f, 0o600); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
+	}
+	return db, nil
 }
 
 func (s *server) routes() http.Handler {
