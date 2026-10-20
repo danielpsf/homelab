@@ -36,9 +36,10 @@ var securityHeaders = map[string]string{
 	"Content-Security-Policy": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; " +
 		"frame-src https://challenges.cloudflare.com; connect-src 'self'; img-src 'self' data:; " +
 		"object-src 'none'; frame-ancestors 'none'; base-uri 'none'",
-	"X-Content-Type-Options": "nosniff",
-	"Referrer-Policy":        "no-referrer",
-	"X-Frame-Options":        "DENY",
+	"X-Content-Type-Options":    "nosniff",
+	"Strict-Transport-Security": "max-age=31536000", // no includeSubDomains: other subdomains exist
+	"Referrer-Policy":           "no-referrer",
+	"X-Frame-Options":           "DENY",
 	"Permissions-Policy": "accelerometer=(), ambient-light-sensor=(), autoplay=(), battery=(), bluetooth=(), camera=(), " +
 		"clipboard-read=(), clipboard-write=(), display-capture=(), document-domain=(), encrypted-media=(), " +
 		"fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), interest-cohort=(), " +

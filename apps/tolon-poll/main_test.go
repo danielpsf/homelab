@@ -780,7 +780,7 @@ func TestPublicRoutesAndHeaders(t *testing.T) {
 			t.Fatalf("CSP %q lacks %q", csp, want)
 		}
 	}
-	if rec.Header().Get("X-Content-Type-Options") != "nosniff" || rec.Header().Get("Referrer-Policy") != "no-referrer" ||
+	if rec.Header().Get("X-Content-Type-Options") != "nosniff" || rec.Header().Get("Strict-Transport-Security") != "max-age=31536000" || rec.Header().Get("Referrer-Policy") != "no-referrer" ||
 		!strings.Contains(rec.Header().Get("Permissions-Policy"), "camera=()") {
 		t.Fatalf("headers missing: %v", rec.Header())
 	}
