@@ -1,0 +1,74 @@
+{
+ "tolon-bell": {
+  "name": "Tolón",
+  "tagline": "Ein Messing-Cencerro, mitten im Schwung festgehalten.",
+  "story": "In den Bergen stellt niemand einen Wecker für die Herde. Eine tiefe Glocke, tolón, tolón, verrät dir, wo alle sind, und du gehst ohne Sorge hin. Genau das tut Tolon für deinen Tag. Eine oder zwei Minuten vor dem Meeting gibt es dir einen Messington, und du gehst los. Es gibt keine Flut von Benachrichtigungen und kein rotes Zeichen. Das Symbol ist ein Cencerro, die trapezförmige spanische Kuhglocke, mitten im Schwung am Riemen festgehalten, mit dem Klöppel, der nachhinkt, wie es bei einer echten Glocke der Fall ist. Messing sitzt auf tiefem Moosgrün, ein warmer Gegenstand in einer Kategorie voller kalter. Es ist das einzige Konzept hier, das um einen Klang gebaut ist.",
+  "history": [
+   "Es begann mit dem Namen: tolón ist der Klang eines spanischen Cencerro. Zuerst wurden fünfzehn kleine Vorschaubilder von Glocken skizziert.",
+   "Die aufrechte Glocke sah aus wie eine Kettlebell. Der nächste Versuch, an einer Schnur hängend, sah aus wie eine Pendelleuchte.",
+   "Erst als die Glocke in den Schwung gekippt und der Klöppel an die Öffnung gerückt wurde, wirkte sie endlich wie eine Glocke.",
+   "Die eine bewusste Unregelmäßigkeit: Die linke Flanke ist voller geschnitten als die rechte, so wie es eine Blechschere hinterlassen würde.",
+   "In 16 px ist es ein Trapez mit einem Punkt. Der Punkt macht daraus eine Glocke, und Messing auf Moos hat keinen hohen Kontrast."
+  ]
+ },
+ "dolunay": {
+  "name": "Dolunay",
+  "tagline": "Ein von Hand geschnittener Vollmond mit einem kleinen Freund, der hinaufschaut.",
+  "story": "Im Türkischen ist tolon der Mond in seiner vierzehnten Nacht, der volle, den niemand übersieht. Er geht auf, füllt den Himmel, hält die Zeit wie die älteste Uhr der Welt und lässt die Nacht dann weiterziehen. Genau das ist die Übernahme: Die Übernahme füllt deinen Bildschirm, hält dich für eine Entscheidung fest und geht wieder. Im Burjatischen bedeutet dasselbe Wort einen Strahl oder ein Schimmern. Das Symbol ist eine cremefarbene Scheibe auf Nachtgrün, mit einem schwachen Hof als Schimmer. Eine kleine Figur unten schaut hinauf, diejenige, die ihn nie verpasst. Das dunkle Erscheinungsbild ist hier der Held, und das helle Icon behält mit Absicht seine Nachtplatte.",
+  "history": [
+   "Die Idee kam aus zwei Bedeutungen des Namens, dem türkischen Vollmond und dem burjatischen Wort für einen Lichtstrahl. Fünfzehn Vorschaubilder mit Monden wurden skizziert.",
+   "Eine nackte Scheibe wirkte nur wie ein Kreis und sonst nichts. Ein Beobachterpunkt, eine Spiegelung und eine Mondmeer-Form wurden alle ausprobiert und verworfen.",
+   "Eine kleine Figur unten, deren Kopf sich gegen den Mond abzeichnet, machte aus der Scheibe eine Szene.",
+   "Die eine bewusste Unregelmäßigkeit: Der Rand ist von Hand geschnitten, mit zwölf Ankerpunkten, die jeweils 6 bis 16 Einheiten von einem echten Kreis abweichen.",
+   "Das ist das schwächste Konzept in kleinen Größen. In 16 px ist es eine cremefarbene Scheibe auf einer dunklen Kachel, und mehr nicht."
+  ]
+ },
+ "lon": {
+  "name": "Lon",
+  "tagline": "Ein Moos-Kiesel mit zwei großen cremefarbenen Augen.",
+  "story": "Lon ist ein kleiner Moos-Kiesel, der direkt unter dem Rand deines Bildschirms lebt. Den größten Teil des Tages vergisst du, dass er da ist. Eine Minute vor dem Meeting hebt sich sein Scheitel über den Rand, zwei große cremefarbene Augen schauen zu dir hoch, und das ist die ganze Botschaft: Es ist Zeit. Er seufzt nie und zählt nie mit, wie oft du etwas verpasst. Wenn du teilnimmst, taucht er zufrieden wieder ab. Das Icon zeigt nur das Stück, das hervorlugt, den Scheitel und die Augen. Die ganze Figur lebt im Übernahme-Bildschirm. Die beiden o im Wort tolon sind seine Augen, Wortmarke und Maskottchen sind also dieselbe Idee.",
+  "history": [
+   "Frühe Skizzen dieses Ansatzes wurden zu einem Grabstein. Die Umformung zu einem Kiesel, der breiter als hoch ist, behob das.",
+   "Das Icon wurde auf den Teil gekürzt, der hervorlugt, den Scheitel und die zwei Augen. Der untere Rand ist flach, weil er der Rand deines Bildschirms ist.",
+   "Auf einem Figurenblatt wurden sechs Zustände gezeichnet. Das Gesicht im Schlummermodus sah zuerst mürrisch aus, also wurden die Lider ein wenig geöffnet.",
+   "Die eine bewusste Unregelmäßigkeit: Der Scheitel sitzt leicht links der Mitte und die linke Schulter ist höher, eine kleine lauschende Neigung.",
+   "In 16 px sind die Augen Quadrate von 3 px, und das ist die Grenze dessen, was diese Größe zeigen kann."
+  ]
+ },
+ "peek": {
+  "name": "Peek",
+  "tagline": "Eine Filz-Moos-Kuppel mit rosigen Wangen und ungleichen Augen.",
+  "story": "Direkt unter dem unteren Rand deines Displays lebt ein stilles Moos-Wesen. Neunundfünfzig Minuten der Stunde bleibt es dir aus dem Weg. Sechzig Sekunden vor deinem Meeting lugt es mit großen, ruhigen Augen und einem kleinen Lächeln über den Rand, als wollte es sagen, dass es Zeit ist. Wenn du mit einer Taste teilnimmst, taucht es zurück ins Moos. Andere Apps dieser Art schlagen dir ins Gesicht oder zeigen mit dem Finger auf dich. Dieses hier ist der höfliche Begleiter im Studio, der dafür sorgt, dass du pünktlich ankommst. Das Icon und die Übernahme nutzen denselben Trick: Das Wesen steigt über den unteren Rand des Squircle und später über den unteren Rand deines Bildschirms.",
+  "history": [
+   "Zwölf Vorschaubilder erkundeten die Idee, und das Wesen, das über den unteren Rand lugt, wurde gewählt, weil es die Mechanik des Bildschirms so klar widerspiegelt.",
+   "Die Wahl wurde zweimal verfeinert und als saubere Vektorformen neu gezeichnet, dann in zwei Prüfrunden in 1024, 128, 32 und 16 px kontrolliert.",
+   "Für 16 px und 32 px wurden von Hand gepixelte Versionen angelegt, dazu ein Symbol für die Menüleiste. In 16 px wirken die eckigen Augen ein wenig roboterhaft.",
+   "Die eine bewusste Unregelmäßigkeit: Die beiden Augen gleichen sich nicht. Das linke ist ein höheres Oval, das rechte ein kleinerer, tiefer sitzender Kreis, was eine neugierige Kopfneigung ergibt.",
+   "Aus dem fertigen Symbol wurde ein Blatt mit sechs Stimmungen gezeichnet, und die Wortmarke neigt die Innenräume ihrer beiden o zum l hin."
+  ]
+ },
+ "pasture-bell": {
+  "name": "Weideglocke",
+  "tagline": "Eine schräge Almglocke mit Lederschlaufe.",
+  "story": "Auf Spanisch ist tolón, tolón der tiefe Klang einer Weideglocke, die in der Dämmerung über die Wiese getragen wird. Hoch in den Bergen benutzt niemand einen schrillen Alarm. Ein tiefer, vertrauter Messington wandert durch das Tal und verrät dir, wo alle sind. Tolon bringt das auf deinen Desktop. Statt zwanzig Benachrichtigungen, die du zu ignorieren lernst, läutet es einmal, sichtbar und ruhig, über deinen ganzen Bildschirm, kurz bevor dein Meeting beginnt. Das Symbol ist eine trapezförmige Almglocke mit flachen Schultern, nicht die runde Glocke eines Benachrichtigungszeichens. Es ist ein handgeschmiedeter Gebrauchsgegenstand: erdig, klangvoll und privat, mit Messing auf Moos und einer Schlaufe aus Sattelleder.",
+  "history": [
+   "Zwölf Vorschaubilder erkundeten die Kuhglocke. Die Almform mit flachen Schultern wurde der runden Benachrichtigungsglocke vorgezogen.",
+   "Die Wahl wurde verfeinert, als saubere Vektorformen neu gezeichnet und in zwei Runden in 1024, 128, 32 und 16 px geprüft.",
+   "Die fertige Glocke neigt sich gegen den Uhrzeigersinn, mit Messingkörper, Lederschlaufe und einem runden cremefarbenen Klöppel, der unter dem Rand hervorlugt.",
+   "Die eine bewusste Unregelmäßigkeit: Der untere Rand ist eine handgehämmerte Welle. Die oberen Ecken blieben scharf, was ein wenig steif wirkt.",
+   "In 16 px gehen die Neigung und die Lederschlaufe durch das Einrasten auf Pixel verloren. Die Wortmarke macht aus dem zweiten o eine kleine Glocke."
+  ]
+ },
+ "knock": {
+  "name": "Anklopfen",
+  "tagline": "Eine angelehnte Tür und ein Keil warmes Lampenlicht.",
+  "story": "Denk an die beste Kollegin oder den besten Kollegen, mit der oder dem du je ein Büro geteilt hast. Vor einem großen Meeting stürmt diese Person nicht herein und ruft auch nicht. Zweimal klopft sie sanft an den Türrahmen, öffnet die Tür einen Spalt, sodass ein warmer Keil Flurlicht über deinen Schreibtisch fällt, und sagt, dass es losgeht. Im Malaiischen heißt tolong bitte. Im Burjatischen bedeutet tolon einen Lichtstrahl. Dieses Konzept vereint beide Bedeutungen in einem stillen Ritual: das höfliche Klopfen und der Lichtstreifen, der dich pünktlich in den Raum einlädt. Es ist das einzige Konzept hier, das Perspektive und starken Hell-Dunkel-Kontrast nutzt.",
+  "history": [
+   "Zwölf Vorschaubilder erkundeten die Idee einer sich öffnenden Tür, durch die Licht fällt, nach den zwei Bedeutungen des Namens: bitte und ein Lichtstrahl.",
+   "Die Wahl wurde als saubere Vektorformen neu gezeichnet: ein dunkler Tintenraum, eine moosgrüne Tür und ein goldener Strahl, mit einem Messingknauf.",
+   "Es folgten zwei Prüfrunden in 1024, 128, 32 und 16 px. In 16 px wird der diagonale Strahl zu einer gezackten Treppe und kann wie eine Note wirken.",
+   "Die eine bewusste Unregelmäßigkeit: Der Türknauf ist ein leicht geneigtes Oval. Die Lichtkanten biegen sich nur um ein paar Pixel, zu wenig, um es zu bemerken.",
+   "Die Wortmarke macht aus dem Fuß des l einen schrägen Keil, der zum einfallenden Licht passt."
+  ]
+ }
+}

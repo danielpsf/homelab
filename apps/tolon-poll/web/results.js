@@ -41,7 +41,8 @@
     options.forEach(function (o) { names[o.id] = o.name; icons[o.id] = o.images && o.images.icon; });
     ids.sort(function (a, b) { return count(fav[b]) - count(fav[a]); });
 
-    $("summary").textContent = total + (total === 1 ? " vote" : " votes") + " so far, " + comments.length + (comments.length === 1 ? " comment." : " comments.");
+    var T = window.i18n.t;
+    $("summary").textContent = T("results.line", { votes: T("results.votes", { n: total }), comments: T("results.comments", { n: comments.length }) });
     var rows = $("rows");
     rows.textContent = "";
     ids.forEach(function (id) {
@@ -50,7 +51,7 @@
       var who = h("div", { class: "who-cell" });
       if (icons[id]) who.appendChild(h("img", { src: "/" + icons[id], alt: "", width: 40, height: 40 }));
       who.appendChild(h("span", { text: names[id] || id }));
-      var bar = h("progress", { max: Math.max(total, 1), value: n, "aria-label": (names[id] || id) + " share of favourites" });
+      var bar = h("progress", { max: Math.max(total, 1), value: n, "aria-label": T("results.shareLabel", { name: names[id] || id }) });
       rows.appendChild(h("tr", {},
         h("th", { scope: "row" }, who),
         h("td", { class: "num", text: String(n) }),
@@ -62,10 +63,10 @@
 
     var list = $("comments");
     list.textContent = "";
-    $("comments-hint").textContent = comments.length ? "" : "No comments yet.";
+    $("comments-hint").textContent = comments.length ? "" : T("results.noComments");
     comments.forEach(function (c) {
       var text = typeof c === "string" ? c : c.comment || c.text || "";
-      var meta = typeof c === "object" ? [c.email, c.favourite && "favourite: " + (names[c.favourite] || c.favourite), c.created_at || c.at].filter(Boolean).join(", ") : "";
+      var meta = typeof c === "object" ? [c.email, c.favourite && T("results.metaFavorite", { name: names[c.favourite] || c.favourite }), c.created_at || c.at].filter(Boolean).join(", ") : "";
       var li = h("li", { text: text });
       if (meta) li.appendChild(h("span", { class: "meta", text: meta }));
       list.appendChild(li);
@@ -80,7 +81,9 @@
     });
   }
 
-  Promise.all([get("/api/results"), get("/api/options").catch(function () { return []; })])
+  window.i18n.ready.then(function () {
+    return Promise.all([get("/api/results"), get("/api/options").then(window.i18n.localizeOptions).catch(function () { return []; })]);
+  })
     .then(function (v) { render(Array.isArray(v[1]) ? v[1] : [], v[0]); })
     .catch(function (e) {
       $("summary").textContent = "";

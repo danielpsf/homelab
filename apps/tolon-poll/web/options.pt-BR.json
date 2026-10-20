@@ -1,0 +1,74 @@
+{
+ "tolon-bell": {
+  "name": "Tolón",
+  "tagline": "Um sino de latão em pleno balanço.",
+  "story": "Nas montanhas, ninguém programa um alarme para o rebanho. Um sino grave, tolón, tolón, diz onde todos estão, e você vai até lá sem preocupação. É isso que o Tolon faz pelo seu dia. Um ou dois minutos antes da reunião, ele dá uma nota de latão, e você vai. Não há enxurrada de avisos nem bolinha vermelha. A marca é um cencerro, o sino trapezoidal espanhol de vaca, flagrado em pleno balanço na correia, com o badalo ficando para trás como em um sino de verdade. O latão repousa sobre um verde musgo profundo, um objeto acolhedor em uma categoria cheia de coisas frias. É o único conceito aqui construído em torno de um som.",
+  "history": [
+   "Tudo começou pelo nome: tolón é o som de um sino de vaca espanhol. Primeiro foram esboçadas quinze miniaturas de sinos.",
+   "O sino em pé parecia um kettlebell. Na tentativa seguinte, pendurado em um cordão, ele parecia uma luminária de teto.",
+   "Inclinar o sino em pleno balanço e passar o badalo para a boca finalmente fez com que parecesse um sino.",
+   "A única imperfeição proposital: o flanco esquerdo é cortado mais cheio que o direito, como ficaria com uma tesoura de funileiro.",
+   "Em 16 px ele vira um trapézio com um ponto. O ponto é o que o faz parecer um sino, e o latão sobre o musgo não tem alto contraste."
+  ]
+ },
+ "dolunay": {
+  "name": "Dolunay",
+  "tagline": "Uma lua cheia recortada à mão, com um pequeno amigo olhando para cima.",
+  "story": "Em turco, tolon é a lua da décima quarta noite, a cheia, aquela que ninguém perde. Ela nasce, enche o céu, marca o tempo como o relógio mais antigo que existe e depois deixa a noite seguir. É isso que a tela cheia faz: ocupa a sua tela, prende você por uma decisão e vai embora. Em buriate, a mesma palavra significa raio ou brilho. A marca é um disco creme sobre verde noite, com um leve halo para o brilho. Uma pequena figura embaixo olha para cima, aquela que nunca a perde. A aparência escura é a principal aqui, e o ícone claro mantém a placa noturna de propósito.",
+  "history": [
+   "A ideia veio de dois significados do nome, a lua cheia turca e a palavra buriate para raio de luz. Foram esboçadas quinze miniaturas de lua.",
+   "Um disco puro parecia só um círculo. Um ponto observador, um reflexo e um formato de mar lunar foram testados e descartados.",
+   "Acrescentar uma pequena figura embaixo, com a cabeça recortada contra a lua, transformou o disco em uma cena.",
+   "A única imperfeição proposital: a borda é cortada à mão, com doze pontos de ancoragem, cada um deslocado de 6 a 16 unidades de um círculo perfeito.",
+   "Este é o conceito mais fraco em tamanhos pequenos. Em 16 px é um disco creme sobre um ladrilho escuro, e só isso."
+  ]
+ },
+ "lon": {
+  "name": "Lon",
+  "tagline": "Uma pedra de musgo com dois grandes olhos cor de creme.",
+  "story": "Lon é uma pequena pedra de musgo que mora logo abaixo da borda da sua tela. Na maior parte do dia, você se esquece de que ela está ali. Um minuto antes da reunião, o alto da cabeça sobe pela borda, dois grandes olhos cor de creme olham para você, e essa é a mensagem inteira: é hora. Ela nunca suspira e nunca conta as vezes que você se atrasou. Quando você entra, ela se abaixa de volta, satisfeita. O ícone mostra só o pedaço que espia, o topo da cabeça e os olhos. O personagem inteiro vive na tela de lembrete. Os dois o da palavra tolon são os olhos dela, então o logotipo e o mascote são uma só ideia.",
+  "history": [
+   "Os primeiros esboços deste território saíram parecendo uma lápide. Remodelar como uma pedra mais larga que alta resolveu.",
+   "O ícone foi reduzido ao trecho que espia, o topo da cabeça e dois olhos. A base é reta porque é a borda da sua tela.",
+   "Seis estados foram desenhados em uma folha de personagem. O estado de soneca parecia emburrado, então as pálpebras foram abertas um pouco.",
+   "A única imperfeição proposital: o topo da cabeça fica um pouco à esquerda do centro e o ombro esquerdo sobe mais, uma pequena inclinação de quem escuta.",
+   "Em 16 px os olhos são quadrados de 3 px, que é o limite do que esse tamanho consegue mostrar."
+  ]
+ },
+ "peek": {
+  "name": "Peek",
+  "tagline": "Uma cúpula de musgo feltrado com bochechas rosadas e olhos diferentes.",
+  "story": "Logo abaixo da borda inferior da sua tela mora uma criatura quieta, de musgo. Durante cinquenta e nove minutos da hora, ela fica fora do seu caminho. Sessenta segundos antes da reunião, ela espia por cima da borda com olhos grandes e calmos e um sorriso discreto, como quem diz que é hora. Quando você aperta uma tecla para entrar, ela se abaixa de volta no musgo. Outros apps desse tipo dão um tapa na sua cara ou apontam o dedo. Este é o companheiro de ateliê educado, que garante que você chegue na hora. O ícone e a tela de lembrete usam o mesmo truque: a criatura sobe pela borda inferior do ícone e, depois, pela parte de baixo da sua tela.",
+  "history": [
+   "Doze miniaturas exploraram a ideia, e a criatura espiando pela borda inferior foi escolhida por ecoar com clareza a mecânica da tela.",
+   "A escolhida foi refinada duas vezes e redesenhada em formas vetoriais limpas, depois conferida em duas rodadas de revisão em 1024, 128, 32 e 16 px.",
+   "Foram feitas versões pixeladas à mão para 16 px e 32 px, além de um glifo para a barra de menus. Em 16 px os olhos quadrados parecem um pouco robóticos.",
+   "A única imperfeição proposital: os dois olhos não combinam. O esquerdo é um oval mais alto, o direito é um círculo menor e mais baixo, o que dá uma inclinação curiosa de cabeça.",
+   "Uma folha com seis humores foi desenhada a partir da marca final, e o logotipo inclina o miolo dos dois o em direção ao l."
+  ]
+ },
+ "pasture-bell": {
+  "name": "Sino do pasto",
+  "tagline": "Um sino alpino inclinado com uma alça de couro.",
+  "story": "Em espanhol, tolón, tolón é o som grave de um sino de pasto levado por um campo ao entardecer. Lá nas montanhas ninguém usa um alarme estridente. Uma nota de latão grave e familiar atravessa o vale e diz onde todos estão. O Tolon traz isso para o seu computador. Em vez de vinte avisos que você aprende a ignorar, ele toca uma vez, de forma visual e calma, pela sua tela inteira, logo antes de a reunião começar. A marca é um sino alpino trapezoidal de ombros retos, e não o sino arredondado de uma notificação. É um objeto forjado à mão para o uso: firme, ressoante e discreto, com latão sobre musgo e uma alça de couro de sela.",
+  "history": [
+   "Doze miniaturas exploraram o sino de vaca. O formato alpino de ombros retos foi escolhido em vez do sino arredondado de notificação.",
+   "A escolhida foi refinada, redesenhada em formas vetoriais limpas e revisada em duas rodadas em 1024, 128, 32 e 16 px.",
+   "O sino final se inclina no sentido anti-horário, com corpo de latão, alça de couro e um badalo creme redondo aparecendo abaixo da borda.",
+   "A única imperfeição proposital: a borda inferior é uma onda martelada à mão. Os cantos de cima continuaram retos, o que parece um pouco rígido.",
+   "Em 16 px a inclinação e a alça de couro se perdem no ajuste aos pixels. O logotipo transforma o segundo o em um sininho."
+  ]
+ },
+ "knock": {
+  "name": "Toc toc",
+  "tagline": "Uma porta entreaberta e uma faixa de luz quente.",
+  "story": "Pense no melhor colega com quem você já dividiu um escritório. Antes de uma reunião importante, ele não entra de supetão nem grita. Dá duas batidinhas no batente, abre a porta uns dois dedos para que uma faixa quente de luz do corredor caia sobre a sua mesa e avisa que estão começando. Em malaio, tolong significa por favor. Em buriate, tolon significa raio de luz. Este conceito junta os dois significados em um ritual tranquilo: a batida educada e o fio de luz que convida você a entrar na sala na hora certa. É o único conceito aqui que usa perspectiva e forte contraste entre claro e escuro.",
+  "history": [
+   "Doze miniaturas exploraram a ideia de uma porta se abrindo e a luz entrando, a partir de dois significados do nome: por favor e raio de luz.",
+   "A escolhida foi redesenhada em formas vetoriais limpas: uma sala em nanquim escuro, uma porta verde musgo e um feixe dourado, com uma maçaneta de latão.",
+   "Seguiram-se duas rodadas de revisão em 1024, 128, 32 e 16 px. Em 16 px o feixe diagonal vira uma escada irregular e pode ser lido como uma nota musical.",
+   "A única imperfeição proposital: a maçaneta é um oval levemente inclinado. As bordas da luz se curvam só alguns pixels, pouco demais para notar.",
+   "O logotipo transforma o pé do l em uma cunha inclinada que combina com a luz derramada."
+  ]
+ }
+}

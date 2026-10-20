@@ -1,0 +1,74 @@
+{
+ "tolon-bell": {
+  "name": "Tolón",
+  "tagline": "Un cencerro de latón captado en pleno vaivén.",
+  "story": "En la montaña nadie pone una alarma para el rebaño. Una campana grave, tolón, tolón, te dice dónde está cada uno y te acercas sin prisa. Eso es lo que hace Tolon por tu día. Un minuto o dos antes de la reunión te da una nota de latón y vas. No hay una avalancha de avisos ni un globo rojo. La marca es un cencerro, la campana trapezoidal española, captada en pleno vaivén sobre su correa, con el badajo rezagado como el de uno de verdad. El latón se asienta sobre un verde musgo profundo, un objeto cálido en una categoría llena de objetos fríos. Es el único concepto de aquí construido alrededor de un sonido.",
+  "history": [
+   "Todo empezó por el nombre: tolón es el sonido de un cencerro español. Primero se dibujaron quince miniaturas de campanas.",
+   "La campana en vertical parecía una pesa rusa. El siguiente intento, colgada de una cuerda, parecía una lámpara de techo.",
+   "Inclinar la campana en pleno vaivén y mover el badajo hasta la boca hizo por fin que se leyera como campana.",
+   "La única imperfección deliberada: el flanco izquierdo está cortado más lleno que el derecho, como lo dejarían unas tijeras de hojalata.",
+   "A 16 px es un trapecio con un punto. El punto es lo que lo hace campana, y el latón sobre musgo no tiene mucho contraste."
+  ]
+ },
+ "dolunay": {
+  "name": "Dolunay",
+  "tagline": "Una luna llena recortada a mano con un pequeño amigo que mira hacia arriba.",
+  "story": "En turco, tolon es la luna de la decimocuarta noche, la llena que nadie pasa por alto. Sale, llena el cielo, marca el tiempo como el reloj más antiguo que existe y luego deja que la noche siga. Eso es lo que hace Tolon: llena tu pantalla, te retiene para una decisión y se marcha. En buriato la misma palabra significa rayo o destello. La marca es un disco crema sobre un verde noche, con un halo tenue para el destello. Una figura pequeña, abajo, mira hacia arriba: la que nunca se la pierde. La apariencia oscura es la protagonista aquí, y el icono claro conserva su placa nocturna a propósito.",
+  "history": [
+   "La idea nació de dos significados del nombre, la luna llena turca y la palabra buriata para un rayo de luz. Se dibujaron quince miniaturas de lunas.",
+   "Un disco desnudo se leía como un círculo y nada más. Se probaron y descartaron un punto observador, un reflejo y la forma de un mar lunar.",
+   "Añadir una figura pequeña abajo, con la cabeza recortada contra la luna, convirtió el disco en una escena.",
+   "La única imperfección deliberada: el borde está cortado a mano, con doce puntos de anclaje desplazados entre 6 y 16 unidades de un círculo perfecto.",
+   "Es el concepto más débil en tamaños pequeños. A 16 px es un disco crema sobre una baldosa oscura, y nada más."
+  ]
+ },
+ "lon": {
+  "name": "Lon",
+  "tagline": "Un guijarro de musgo con dos ojos grandes color crema.",
+  "story": "Lon es un guijarro de musgo pequeño que vive justo debajo del borde de tu pantalla. Casi todo el día te olvidas de que está ahí. Un minuto antes de la reunión asoma la parte de arriba de su cabeza por el borde, dos ojos grandes color crema te miran y ese es todo el mensaje: es la hora. Nunca suspira y nunca te cuenta los despistes. Cuando te unes, se esconde de nuevo, contento. El icono muestra solo el fragmento que asoma, la coronilla y los ojos. El personaje entero vive en la pantalla de Tolon. Las dos o de la palabra tolon son sus ojos, así que el logotipo y la mascota son una misma idea.",
+  "history": [
+   "Los primeros bocetos de este territorio salieron como una lápida. Darle forma de guijarro, más ancho que alto, lo arregló.",
+   "El icono se recortó hasta la parte que asoma, la coronilla y los dos ojos. El borde de abajo es plano porque es el borde de tu pantalla.",
+   "Se dibujaron seis estados en una hoja de personaje. La cara de posponer parecía enfadada al principio, así que se abrieron un poco los párpados.",
+   "La única imperfección deliberada: la coronilla queda algo a la izquierda del centro y el hombro izquierdo sube más, una pequeña inclinación de escucha.",
+   "A 16 px los ojos son cuadrados de 3 px, que es el límite de lo que ese tamaño puede mostrar."
+  ]
+ },
+ "peek": {
+  "name": "Peek",
+  "tagline": "Una cúpula de musgo afieltrado con mejillas sonrosadas y ojos desiguales.",
+  "story": "Justo debajo del borde inferior de tu pantalla vive una criatura de musgo tranquila. Durante cincuenta y nueve minutos de la hora no te estorba. Sesenta segundos antes de tu reunión asoma por el borde con ojos grandes y serenos y una sonrisa pequeña, como diciendo que ya es la hora. Cuando pulsas una tecla para unirte, se esconde de nuevo en el musgo. Otras apps de este terreno te dan un golpe en la cara o te señalan con el dedo. Esta es la compañera educada que se asegura de que llegues a tiempo. El icono y la pantalla de Tolon usan el mismo truco: la criatura sube por el borde inferior del cuadrado redondeado y, más tarde, por la parte de abajo de tu pantalla.",
+  "history": [
+   "Doce miniaturas exploraron la idea, y se eligió la criatura asomando por el borde inferior por lo bien que se hace eco de la mecánica de la pantalla.",
+   "La elegida se refinó dos veces y se redibujó con formas vectoriales limpias, y luego se revisó en dos rondas a 1024, 128, 32 y 16 px.",
+   "Se hicieron versiones pixeladas a mano para 16 px y 32 px, además de un glifo para la barra de menús. A 16 px los ojos cuadrados parecen un poco robóticos.",
+   "La única imperfección deliberada: los dos ojos no son iguales. El izquierdo es un óvalo más alto y el derecho un círculo más pequeño y más bajo, lo que da una inclinación de cabeza curiosa.",
+   "Se dibujó una hoja de seis estados de ánimo a partir de la marca final, y el logotipo inclina los huecos de sus dos o hacia la l."
+  ]
+ },
+ "pasture-bell": {
+  "name": "Cencerro de pastoreo",
+  "tagline": "Un cencerro alpino inclinado con un asa de cuero.",
+  "story": "En español, tolón, tolón es el sonido grave de un cencerro de pastoreo que cruza la pradera al atardecer. En lo alto de la montaña nadie usa una alarma estridente. Una nota de latón grave y familiar recorre el valle y te dice dónde está cada uno. Tolon trae eso a tu escritorio. En lugar de veinte avisos que aprendes a ignorar, suena una sola vez, de forma visual y tranquila, por toda tu pantalla justo antes de que empiece tu reunión. La marca es un cencerro alpino trapezoidal de hombros planos, no la campana redondeada de un aviso de notificación. Es un objeto de uso forjado a mano: sólido, resonante y privado, con latón sobre musgo y un asa de cuero de montura.",
+  "history": [
+   "Doce miniaturas exploraron el cencerro. Se eligió la forma alpina de hombros planos frente a la campana redondeada de las notificaciones.",
+   "La elegida se refinó, se redibujó con formas vectoriales limpias y se revisó en dos rondas a 1024, 128, 32 y 16 px.",
+   "La campana final se inclina hacia la izquierda, con cuerpo de latón, asa de cuero y un badajo redondo color crema que asoma bajo el borde.",
+   "La única imperfección deliberada: el borde de abajo es una onda martillada a mano. Las esquinas de arriba quedaron afiladas, lo que se ve un poco rígido.",
+   "A 16 px la inclinación y el asa de cuero se pierden por el ajuste a píxeles. El logotipo convierte la segunda o en una campana pequeña."
+  ]
+ },
+ "knock": {
+  "name": "Toc toc",
+  "tagline": "Una puerta entornada y una cuña de luz cálida de lámpara.",
+  "story": "Piensa en el mejor compañero con el que has compartido oficina. Antes de una reunión importante no entra de golpe ni da voces. Da dos golpecitos suaves en el marco, entreabre la puerta un palmo para que una cuña cálida de luz del pasillo caiga sobre tu mesa y dice que van a empezar. En malayo, tolong significa por favor. En buriato, tolon significa un rayo de luz. Este concepto une ambos significados en un ritual tranquilo: la llamada educada y la rendija de luz que te invita a entrar en la sala a tiempo. Es el único concepto de aquí que usa perspectiva y un fuerte contraste de luz y sombra.",
+  "history": [
+   "Doce miniaturas exploraron la idea de una puerta que se abre y deja entrar la luz, a partir de dos significados del nombre: por favor y un rayo de luz.",
+   "La elegida se redibujó con formas vectoriales limpias: una sala de tinta oscura, una puerta verde musgo y un haz dorado, con un pomo de latón.",
+   "Siguieron dos rondas de revisión a 1024, 128, 32 y 16 px. A 16 px el haz diagonal se convierte en una escalera dentada y puede leerse como una nota musical.",
+   "La única imperfección deliberada: el pomo es un óvalo ligeramente inclinado. Los bordes de la luz se curvan solo unos pocos píxeles, demasiado poco para notarlo.",
+   "El logotipo convierte el pie de la l en una cuña inclinada que combina con la luz que se cuela."
+  ]
+ }
+}

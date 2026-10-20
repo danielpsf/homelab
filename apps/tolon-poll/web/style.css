@@ -5,14 +5,42 @@
 @font-face{font-family:"Inter Tight";font-style:normal;font-weight:500;font-display:swap;src:url("/fonts/inter-tight-latin-500-normal.woff2") format("woff2")}
 @font-face{font-family:"Inter Tight";font-style:normal;font-weight:600;font-display:swap;src:url("/fonts/inter-tight-latin-600-normal.woff2") format("woff2")}
 
+@font-face{font-family:"Noto Sans Arabic";font-style:normal;font-weight:400;font-display:swap;src:url("/fonts/noto-sans-arabic-arabic-400-normal.woff2") format("woff2")}
+@font-face{font-family:"Noto Sans Arabic";font-style:normal;font-weight:500;font-display:swap;src:url("/fonts/noto-sans-arabic-arabic-500-normal.woff2") format("woff2")}
+@font-face{font-family:"Noto Sans Arabic";font-style:normal;font-weight:600;font-display:swap;src:url("/fonts/noto-sans-arabic-arabic-600-normal.woff2") format("woff2")}
+@font-face{font-family:"Noto Sans Devanagari";font-style:normal;font-weight:400;font-display:swap;src:url("/fonts/noto-sans-devanagari-devanagari-400-normal.woff2") format("woff2")}
+@font-face{font-family:"Noto Sans Devanagari";font-style:normal;font-weight:500;font-display:swap;src:url("/fonts/noto-sans-devanagari-devanagari-500-normal.woff2") format("woff2")}
+@font-face{font-family:"Noto Sans Devanagari";font-style:normal;font-weight:600;font-display:swap;src:url("/fonts/noto-sans-devanagari-devanagari-600-normal.woff2") format("woff2")}
+
+/* Script stacks: Inter first for Latin names, then the script font, then system fonts. CJK is never self-hosted. */
+:root{
+  --ff-ar:"Noto Sans Arabic","Segoe UI","Geeza Pro",system-ui,sans-serif;
+  --ff-hi:"Noto Sans Devanagari","Kohinoor Devanagari","Nirmala UI",system-ui,sans-serif;
+  --ff-zh:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  --ff-ja:"Hiragino Sans","Yu Gothic","Noto Sans CJK JP",system-ui,sans-serif;
+}
+:root:lang(ar){--sm-font-sans:Inter,var(--ff-ar);--sm-font-display:"Inter Tight",Inter,var(--ff-ar)}
+:root:lang(hi){--sm-font-sans:Inter,var(--ff-hi);--sm-font-display:"Inter Tight",Inter,var(--ff-hi)}
+:root:lang(zh-CN){--sm-font-sans:Inter,var(--ff-zh);--sm-font-display:"Inter Tight",Inter,var(--ff-zh)}
+:root:lang(ja){--sm-font-sans:Inter,var(--ff-ja);--sm-font-display:"Inter Tight",Inter,var(--ff-ja)}
+/* Negative tracking breaks Arabic joining and crowds the other scripts; tall scripts need more line height. */
+:root:lang(ar) *,:root:lang(hi) *,:root:lang(zh-CN) *,:root:lang(ja) *{letter-spacing:normal!important}
+:root:lang(ar) :is(h1,h2,h3,.sm-display-m),:root:lang(hi) :is(h1,h2,h3,.sm-display-m){line-height:1.35!important}
+:root:lang(zh-CN) :is(h1,h2,h3),:root:lang(ja) :is(h1,h2,h3){line-height:1.25!important}
+.lang-menu [lang="ar"]{font-family:Inter,var(--ff-ar)}
+.lang-menu [lang="hi"]{font-family:Inter,var(--ff-hi)}
+.lang-menu [lang="zh-CN"]{font-family:Inter,var(--ff-zh)}
+.lang-menu [lang="ja"]{font-family:Inter,var(--ff-ja)}
+
 [hidden]{display:none!important}
 /* Swiss Moss muted grey is 4.45:1 on paper; darken it for small text in light mode (AA needs 4.5:1). */
 @media (prefers-color-scheme:light){:root{--sm-muted:#5C625C}}
-.skip{position:absolute;left:16px;top:-80px;z-index:10;padding:10px 16px;border-radius:var(--sm-radius-pill);background:var(--sm-ink);color:var(--sm-paper);font-weight:600;text-decoration:none}
+.skip{position:absolute;inset-inline-start:16px;top:-80px;z-index:10;padding:10px 16px;border-radius:var(--sm-radius-pill);background:var(--sm-ink);color:var(--sm-paper);font-weight:600;text-decoration:none}
 .skip:focus{top:12px}
 
 .page{width:100%;max-width:1040px;margin:0 auto;padding:0 16px 64px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:20px 0 0}
+.top{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;padding:20px 0 0}
+.top .brand{margin-inline-end:auto}
 .brand{font-family:var(--sm-font-display);font-weight:600;font-size:20px;letter-spacing:-.02em;text-decoration:none}
 .who{margin:0;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;font-size:14px;color:var(--sm-muted);overflow-wrap:anywhere}
 .linkbtn{display:inline;padding:2px 0;border:0;background:none;font:inherit;color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer;border-radius:4px}
@@ -34,7 +62,7 @@
 .hero h1{font-family:var(--sm-font-display);font-size:clamp(32px,6vw,52px);line-height:1.05;font-weight:600;letter-spacing:-.035em;margin:0 0 20px}
 .hero p{margin:0 0 14px;font-size:17px;line-height:1.55}
 .hero .links{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-.hero .privacy{margin:28px 0 0;font-size:14px;padding:14px 16px;border:1px solid var(--sm-line);border-radius:var(--sm-radius-m);background:var(--sm-card);font-size:14px;line-height:1.5;max-width:760px}
+.hero .privacy{margin:28px 0 0;font-size:14px;padding:16px 18px;border:1px solid var(--sm-line);border-radius:var(--sm-radius-m);background:var(--sm-card);font-size:14px;line-height:1.5;max-width:760px}
 
 .note{margin:24px 0 0;padding:16px 18px;border-radius:var(--sm-radius-m);border:1px solid var(--sm-line);background:var(--sm-card);font-size:15px;line-height:1.5}
 .note.ok{border-color:var(--sm-moss);background:var(--sm-mist)}
@@ -63,7 +91,7 @@
 .more summary{cursor:pointer;font-weight:600;font-size:15px;padding:4px 0;border-radius:var(--sm-radius-s)}
 .more summary:focus-visible{outline:2px solid var(--sm-focus);outline-offset:2px}
 .more p,.more ol{margin:10px 0 0;font-size:15px;line-height:1.55}
-.more ol{padding-left:22px}
+.more ol{padding-inline-start:22px}
 .more li{margin:0 0 8px}
 
 .scene{margin:0}
@@ -89,7 +117,7 @@
 .comment{margin-top:36px;max-width:760px}
 .comment .sm-label{font-size:16px}
 .comment .sm-textarea{min-height:140px}
-.counter{display:block;margin-top:6px;font-size:13px;color:var(--sm-muted);text-align:right}
+.counter{display:block;margin-top:6px;font-size:13px;color:var(--sm-muted);text-align:end}
 .counter.low{color:var(--sm-danger);font-weight:600}
 .submit{margin-top:24px;display:flex;flex-wrap:wrap;align-items:center;gap:16px}
 .submit .hint{margin:0;font-size:14px;color:var(--sm-muted);flex:1 1 240px}
@@ -103,10 +131,10 @@
 /* results */
 .table-wrap{overflow-x:auto;border:1px solid var(--sm-line);border-radius:var(--sm-radius-m);background:var(--sm-card)}
 .res{width:100%;border-collapse:collapse;font-size:15px}
-.res caption{text-align:left;padding:14px 16px;font-weight:600}
-.res th,.res td{padding:12px 16px;text-align:left;border-top:1px solid var(--sm-line);vertical-align:middle}
+.res caption{text-align:start;padding:14px 16px;font-weight:600}
+.res th,.res td{padding:12px 16px;text-align:start;border-top:1px solid var(--sm-line);vertical-align:middle}
 .res thead th{font-size:13px;color:var(--sm-muted);font-weight:600;border-top:0}
-.res td.num,.res th.num{text-align:right;font-variant-numeric:tabular-nums}
+.res td.num,.res th.num{text-align:end;font-variant-numeric:tabular-nums}
 .res .who-cell{display:flex;align-items:center;gap:12px;font-weight:600}
 .res .who-cell img{width:40px;height:40px;border-radius:9px;flex:none}
 .res progress{width:100%;min-width:90px;height:10px;accent-color:var(--sm-moss)}
@@ -128,3 +156,19 @@
 .story{margin:0;font-size:15px;line-height:1.55;border-top:1px solid var(--sm-line);padding-top:12px}
 .cta{margin:32px 0 0}
 .hero .links .sm-btn,.cta .sm-btn{text-decoration:none}
+
+/* language switcher */
+.i18n-pending body{visibility:hidden}
+.lang{position:relative}
+.lang-btn{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;border:1px solid var(--sm-line-strong);border-radius:var(--sm-radius-pill);background:var(--sm-card);color:var(--sm-ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.lang-btn:hover{background:var(--sm-paper-deep)}
+.lang .flag{display:block;width:20px;height:15px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.18);flex:none}
+.lang-menu{position:absolute;inset-inline-end:0;top:calc(100% + 6px);z-index:40;min-width:230px;margin:0;padding:6px;list-style:none;border:1px solid var(--sm-line);border-radius:var(--sm-radius-m);background:var(--sm-card);box-shadow:var(--sm-shadow-lift)}
+.lang-menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:var(--sm-radius-s);background:none;color:var(--sm-ink);font:inherit;font-size:14px;text-align:start;cursor:pointer}
+.lang-menu button:hover{background:var(--sm-paper-deep)}
+.lang-menu button[aria-checked="true"]{background:var(--sm-mist);font-weight:600}
+.lang-menu button:focus-visible,.lang-btn:focus-visible{outline:2px solid var(--sm-focus);outline-offset:2px}
+.privacy-title{font-family:var(--sm-font-display);font-size:18px;letter-spacing:-.01em;margin:0 0 8px}
+.privacy ul{margin:0;padding-inline-start:20px}
+.privacy li{margin:0 0 6px}
+.privacy li ul{margin-top:6px}

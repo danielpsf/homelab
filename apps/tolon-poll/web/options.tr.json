@@ -1,0 +1,74 @@
+{
+ "tolon-bell": {
+  "name": "Tolón",
+  "tagline": "Savrulurken yakalanmış pirinç bir inek çanı.",
+  "story": "Dağlarda sürü için kimse alarm kurmaz. Alçak bir çan sesi, tolón, tolón, herkesin nerede olduğunu söyler ve sen kaygısızca yanlarına yürürsün. Tolon da gününe bunu yapar. Toplantıdan bir iki dakika önce sana tek bir pirinç nota verir, sen de kalkıp gidersin. Bildirim yağmuru yok, kırmızı rozet yok. Amblem bir cencerro, yani trapez biçimli İspanyol inek çanı. Kayışı üstünde savrulurken yakalanmış ve çan dili, gerçek bir çanda olduğu gibi biraz geriden geliyor. Pirinç, derin yosun yeşilinin üstünde duruyor. Soğuk nesnelerle dolu bir kategoride sıcak bir nesne bu. Burada bir sesin etrafında kurulmuş tek konsept de bu.",
+  "history": [
+   "Her şey addan başladı: tolón, İspanyol inek çanının sesidir. Önce çanların on beş küçük taslağı çizildi.",
+   "Dik duran çan bir kettlebell gibi göründü. İpten sarkan sonraki deneme ise bir sarkıt lambaya benzedi.",
+   "Çanı savrulurken eğip çan dilini ağza taşıyınca sonunda çan gibi göründü.",
+   "Bilerek bırakılan tek kusur: sol yan, bir teneke makasın bırakacağı gibi sağdan daha dolgun kesildi.",
+   "16 px'de bir trapezin içinde bir nokta var. Çanı çan yapan o nokta, ama yosun üstündeki pirinç yüksek kontrastlı değil."
+  ]
+ },
+ "dolunay": {
+  "name": "Dolunay",
+  "tagline": "Elle kesilmiş bir dolunay ve yukarı bakan küçük bir dost.",
+  "story": "Türkçede tolon, ayın on dördüncü gecesidir, kimsenin kaçırmadığı dolunay. Doğar, gökyüzünü doldurur, var olan en eski saat gibi zamanı tutar ve gecenin devam etmesine izin verir. Ekranı kaplama anı da böyle: ekranını doldurur, seni tek bir karar için tutar ve çekilir. Buryatçada aynı sözcük ışın ya da parıltı demek. Amblem, gece yeşili üzerinde krem rengi bir disk ve parıltıyı anlatan silik bir hale. Altta küçük bir figür yukarı bakıyor, onu hiç kaçırmayan kişi. Burada koyu görünüm kahraman. Açık simge de gece zeminini bilerek koruyor.",
+  "history": [
+   "Fikir adın iki anlamından doğdu: Türkçedeki dolunay ve Buryatçadaki ışık demeti. On beş ay taslağı çizildi.",
+   "Çıplak bir disk yalnızca bir daire gibi göründü. Gözcü nokta, yansıma ve ay denizi biçimi denendi, hepsi bırakıldı.",
+   "Altta başı aya karşı siluet olan küçük bir figür eklemek, diski bir sahneye çevirdi.",
+   "Bilerek bırakılan tek kusur: kenar elle kesildi, on iki bağlantı noktasının her biri gerçek daireden 6 ile 16 birim kaydırıldı.",
+   "Küçük boyutlarda en zayıf konsept bu. 16 px'de koyu bir karo üzerinde krem rengi bir diskten ibaret."
+  ]
+ },
+ "lon": {
+  "name": "Lon",
+  "tagline": "İki iri krem gözlü bir yosun çakıl taşı.",
+  "story": "Lon, ekranının kenarının hemen altında yaşayan küçük bir yosun çakıl taşı. Günün çoğunda orada olduğunu unutursun. Toplantıdan bir dakika önce başının üstü kenarın üzerinden yükselir, iki iri krem göz sana bakar ve mesajın tamamı bu: vakit geldi. Asla iç çekmez, kaçırdıklarını saymaz. Sen katılınca memnun bir halde yeniden aşağı eğilir. Simge yalnızca dışarı bakan parçayı gösterir: başın tepesi ve gözler. Karakterin tamamı ekranı kaplama anında yaşar. Tolon sözcüğündeki iki o onun gözleridir, yani yazı işareti ile maskot tek bir fikirdir.",
+  "history": [
+   "Bu alandaki ilk taslaklar bir mezar taşına benzedi. Onu boyundan geniş bir çakıl taşına çevirmek sorunu çözdü.",
+   "Simge dışarı bakan kısma indirildi: tepe ve iki göz. Alt kenar düz, çünkü o ekranının kenarı.",
+   "Karakter sayfasında altı hâl çizildi. Ertelenmiş yüz önce huysuz göründü, bu yüzden göz kapakları biraz açıldı.",
+   "Bilerek bırakılan tek kusur: tepe merkezin biraz solunda ve sol omuz daha yüksekte, küçük bir dinleme eğimi.",
+   "16 px'de gözler 3 px'lik karelerdir, bu da o boyutun gösterebileceği en uç sınırdır."
+  ]
+ },
+ "peek": {
+  "name": "Peek",
+  "tagline": "Pembe yanaklı, farklı gözlü, keçe gibi yosun bir kubbe.",
+  "story": "Ekranının alt kenarının hemen altında sessiz bir yosun yaratığı yaşar. Saatin elli dokuz dakikası boyunca yolundan çekilir. Toplantından altmış saniye önce, vakit geldi demek istercesine geniş, sakin gözler ve küçük bir gülümsemeyle kenardan yukarı bakar. Katılmak için bir tuşa basınca yeniden yosunun içine eğilir. Bu alandaki diğer uygulamalar yüzüne çarpar ya da parmak sallar. Bu ise zamanında varmanı sağlayan kibar bir stüdyo arkadaşı. Simge de ekranı kaplama anı da aynı numarayı kullanır: yaratık squircle'ın alt kenarından, sonra da ekranının altından yükselir.",
+  "history": [
+   "On iki taslak fikri araştırdı. Alt kenardan bakan yaratık, ekran mekaniğini çok net yansıttığı için seçildi.",
+   "Seçilen taslak iki kez inceltildi, temiz vektör şekiller olarak yeniden çizildi ve 1024, 128, 32 ve 16 px'de iki inceleme turunda denetlendi.",
+   "16 px ve 32 px için elle pikselleştirilmiş sürümler ve bir menü çubuğu glifi yapıldı. 16 px'de kare gözler biraz robotik görünüyor.",
+   "Bilerek bırakılan tek kusur: iki göz birbirine uymuyor. Soldaki daha uzun bir oval, sağdaki daha aşağıya yerleşmiş küçük bir daire. Bu, meraklı bir baş eğimi veriyor.",
+   "Son işaretten altı ruh hâlinden oluşan bir sayfa çizildi ve yazı işareti iki o'sunun içlerini l harfine doğru eğer."
+  ]
+ },
+ "pasture-bell": {
+  "name": "Mera çanı",
+  "tagline": "Deri halkalı, eğik duran bir dağ inek çanı.",
+  "story": "İspanyolcada tolón, tolón, akşam üstü bir meradan taşan mera çanının derin sesidir. Dağların yükseğinde kimse tiz bir alarm kullanmaz. Alçak, tanıdık bir pirinç nota vadiyi aşar ve herkesin nerede olduğunu söyler. Tolon bunu masaüstüne getirir. Görmezden gelmeyi öğrendiğin yirmi bildirim yerine, toplantın başlamadan hemen önce bütün ekranında görsel ve sakin bir biçimde bir kez çalar. Amblem, bildirim rozetindeki yuvarlak çan değil, düz omuzlu, trapez biçimli bir dağ inek çanı. Elde dövülmüş, kullanım için yapılmış bir nesne: yere basan, yankılanan ve özel. Yosun üstünde pirinç ve semer derisinden bir halka var.",
+  "history": [
+   "On iki taslak inek çanını araştırdı. Düz omuzlu dağ biçimi, yuvarlak bildirim çanına tercih edildi.",
+   "Seçilen taslak inceltildi, temiz vektör şekiller olarak yeniden çizildi ve 1024, 128, 32 ve 16 px'de iki turda gözden geçirildi.",
+   "Son çan saat yönünün tersine eğik: pirinç bir gövde, deri bir halka ve kenarın altından bakan yuvarlak krem bir çan dili.",
+   "Bilerek bırakılan tek kusur: alt kenar elle dövülmüş bir dalga. Üst köşeler keskin kaldı, bu da biraz sert duruyor.",
+   "16 px'de eğim ve deri halka piksel hizalamasına yenik düşer. Yazı işareti ikinci o'yu küçük bir çana çevirir."
+  ]
+ },
+ "knock": {
+  "name": "Tık",
+  "tagline": "Aralık bir kapı ve sıcak bir lamba ışığı dilimi.",
+  "story": "Birlikte ofis paylaştığın en iyi iş arkadaşını düşün. Önemli bir toplantıdan önce dalmaz, bağırmaz. Kapı pervazına iki nazik tıklama yapar, kapıyı bir parmak aralar ki koridordan sıcak bir ışık dilimi masana düşsün, sonra başlıyoruz der. Malaycada tolong lütfen demek. Buryatçada tolon bir ışık demeti demek. Bu konsept iki anlamı tek bir sessiz törende birleştirir: nazik bir tıklama ve seni odaya zamanında davet eden ince bir ışık. Perspektif ve güçlü açık koyu karşıtlığı kullanan tek konsept de bu.",
+  "history": [
+   "On iki taslak, kapının açılıp ışığın içeri dökülmesi fikrini araştırdı ve adın iki anlamından yararlandı: lütfen ve bir ışık demeti.",
+   "Seçilen taslak temiz vektör şekiller olarak yeniden çizildi: koyu mürekkep bir oda, yosun yeşili bir kapı ve altın rengi bir ışın, pirinç bir tokmakla.",
+   "1024, 128, 32 ve 16 px'de iki inceleme turu izledi. 16 px'de çapraz ışın tırtıklı bir merdivene dönüşür ve müzik notası gibi okunabilir.",
+   "Bilerek bırakılan tek kusur: kapı kolu hafif eğik bir oval. Işık kenarları yalnızca birkaç piksel kavisli, fark edilmeyecek kadar az.",
+   "Yazı işareti l harfinin ayağını, dökülen ışığa uyan eğik bir kamaya çevirir."
+  ]
+ }
+}
