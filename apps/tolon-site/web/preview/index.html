@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex">
+  <title data-i18n="pv.title">Tolon preview</title>
+  <link rel="stylesheet" href="/swiss-moss.css?v=6e8afb1e0f">
+  <link rel="stylesheet" href="/style.css?v=6e8afb1e0f">
+  <link rel="stylesheet" href="/preview/preview.css?v=6e8afb1e0f">
+  <script src="/i18n.js?v=6e8afb1e0f"></script>
+  <script src="/swiss-moss.js?v=6e8afb1e0f" defer></script>
+</head>
+<body>
+  <div class="page">
+    <div class="top">
+      <a class="brand" href="/" data-home>Tolon</a>
+      <a class="who-link" href="/" data-i18n="pv.back">Back to the poll</a>
+    </div>
+
+    <header class="hero">
+      <h1 data-i18n="pv.h1">See why the icons look like this</h1>
+      <p data-i18n="pv.p">Tolon has one job: a minute before a meeting it covers your screen so you cannot miss it. The icons below are judged against that moment. The reminder and the calendars page on this page are the real Tolon interface, running in your browser with sample data. Nothing you do here is saved or sent.</p>
+      <ul class="why">
+        <li><strong data-i18n="pv.why1.title">It has to be friendly.</strong> <span data-i18n="pv.why1.text">Tolon covers the whole screen, so the icon sets the tone first: a warm object or a small character, not an alarm.</span></li>
+        <li><strong data-i18n="pv.why2.title">It has to hold up at 16 px.</strong> <span data-i18n="pv.why2.text">The menu bar shows the icon at 16 px. Every concept was drawn again by hand for that size.</span></li>
+        <li><strong data-i18n="pv.why3.title">It has to belong.</strong> <span data-i18n="pv.why3.text">The screens use paper, ink and one moss green, so the icons share that palette.</span></li>
+      </ul>
+    </header>
+
+    <section aria-labelledby="try">
+      <h2 class="section-title" id="try" data-i18n="pv.tryTitle">Try it</h2>
+      <fieldset class="chooser">
+        <legend data-i18n="pv.legend">Icon shown on the desktop below</legend>
+        <div class="chooser-grid" id="chooser"></div>
+      </fieldset>
+
+      <div class="actions desktop-only">
+        <a class="sm-btn primary lg" id="show" href="/preview/interrupt.html" data-i18n="pv.show">Show the reminder</a>
+        <a class="sm-btn lg" id="cal-link" href="/preview/app.html#/calendars" data-i18n="pv.cal">Open the calendars page</a>
+      </div>
+      <p class="sm-hint desktop-only" data-i18n="pv.hint">In the reminder, Enter, Esc, D and Space work as they do in the app. Any of them brings you back here.</p>
+      <p class="phone-note note" data-i18n="pv.phone">The real screens are made for a desktop. Open this page on a computer to try the reminder and the calendars page. The pictures below show the same screens.</p>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+      <div id="load-error" class="note warn" hidden><p data-i18n="pv.loadError">The icons did not load. Reload the page to try again.</p></div>
+
+      <figure class="desk-fig">
+        <div class="desk" dir="ltr" aria-hidden="true">
+          <div class="menu">
+            <span class="ph w1"></span><span class="ph w2"></span><span class="ph w3"></span>
+            <span class="spacer"></span>
+            <img id="tray" class="tray" alt="" width="16" height="16">
+            <span class="ph w4"></span>
+            <span class="clock">13:59</span>
+          </div>
+          <div class="dock">
+            <span class="tile t1"></span><span class="tile t2"></span><span class="tile t3"></span>
+            <img id="dock" class="tile mine" alt="" width="64" height="64">
+            <span class="tile t4"></span><span class="tile t5"></span>
+          </div>
+        </div>
+        <figcaption id="desk-cap"></figcaption>
+      </figure>
+    </section>
+
+    <section aria-labelledby="scene-h">
+      <h2 class="section-title" id="scene-h" data-i18n="pv.sceneTitle">The same screen in this style</h2>
+      <p class="section-hint" data-i18n="pv.sceneHint">The real interface uses one plain bell mark today. This is how the selected concept would dress the reminder.</p>
+      <figure class="scene">
+        <img id="scene" width="1280" height="800" alt="">
+        <figcaption id="scene-cap"></figcaption>
+      </figure>
+    </section>
+
+    <footer class="foot">
+      <p class="foot-home"><a class="sm-btn quiet sm" href="/" data-home data-i18n="common.backHome">Back to the start</a></p>
+    </footer>
+  </div>
+  <script src="/preview/preview.js?v=6e8afb1e0f"></script>
+</body>
+</html>

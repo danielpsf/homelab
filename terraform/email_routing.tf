@@ -1,4 +1,4 @@
-# Contact address for the poll's privacy note: tolon@<domain> forwards to admin_email.
+# Contact address tolon@<domain> forwards to admin_email (kept after the poll closed, for data deletion requests).
 # Needs the API token permissions "Zone > Email Routing Rules > Edit" and
 # "Account > Email Routing Addresses > Edit"; enable with enable_tolon_contact = true.
 # Enabling Email Routing adds Cloudflare's MX and SPF records at the zone apex.

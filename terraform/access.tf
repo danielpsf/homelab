@@ -32,31 +32,3 @@ resource "cloudflare_zero_trust_access_application" "apps" {
     }
   ]
 }
-
-# Tolon poll admin results only. Voters do not pass through Access (free plan seat cap);
-# the app verifies their email with its own one-time codes.
-resource "cloudflare_zero_trust_access_application" "tolon_admin" {
-  account_id       = var.cloudflare_account_id
-  name             = "Tolon Poll Results"
-  type             = "self_hosted"
-  session_duration = "24h"
-
-  destinations = [
-    { type = "public", uri = "tolon.${var.domain}/pool/results" },
-    { type = "public", uri = "tolon.${var.domain}/api/results" },
-  ]
-
-  policies = [
-    {
-      name     = "Allow admin email OTP"
-      decision = "allow"
-      include = [
-        {
-          email = {
-            email = var.admin_email
-          }
-        }
-      ]
-    }
-  ]
-}

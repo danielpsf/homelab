@@ -48,7 +48,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab" {
       },
       {
         hostname = "tolon.${var.domain}"
-        service  = "http://tolon-poll:8080"
+        service  = "http://tolon-site:8080"
       },
       {
         # catch-all rule (required by Cloudflare)

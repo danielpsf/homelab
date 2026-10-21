@@ -11,7 +11,6 @@
 #   - Zone > DNS > Edit
 #   - Zone > Zone > Read
 # Only when the matching switch below is on (shown as in the token editor):
-#   - Account > Turnstile > Edit             (Turnstile Sites Write; enable_tolon_turnstile)
 #   - Zone > Zone WAF > Edit                 (Zone WAF Write; enable_tolon_rate_limit)
 #   - Zone > Email Routing Rules > Edit      (enable_tolon_contact)
 #   - Account > Email Routing Addresses > Edit (enable_tolon_contact)
@@ -25,26 +24,13 @@ cloudflare_zone_id    = "your-zone-id-here"
 # Your domain name
 domain = "example.com"
 
-# Email address for Cloudflare Zero Trust OTP (all services, including the Tolon poll results paths)
+# Email address for Cloudflare Zero Trust OTP (all services)
 admin_email = "your-email@example.com"
 
-# Resend sending domain for the Tolon poll emails. Copy the records Resend shows
-# for tolon.<your-domain> (use full record names). Leave empty until then.
-# resend_dns_records = {
-#   dkim = { name = "resend._domainkey.tolon.example.com", type = "TXT", content = "p=MIGfMA0..." }
-#   spf  = { name = "send.tolon.example.com", type = "TXT", content = "v=spf1 include:amazonses.com ~all" }
-#   mx   = { name = "send.tolon.example.com", type = "MX", content = "feedback-smtp.eu-west-1.amazonses.com", priority = 10 }
-#   click = { name = "rsend.tolon.example.com", type = "CNAME", content = "<value shown by Resend>" }
-#   dmarc = { name = "_dmarc.tolon.example.com", type = "TXT", content = "\"v=DMARC1; p=none;\"" }
-# }
-
-# Tolon poll Turnstile widget (default false). Needs the token permission above.
-# Turnstile, the rate limit and the contact address are all on in the live setup.
-# enable_tolon_turnstile = true
-
-# Tolon poll edge rate limit, 20 requests per 10 s per IP (default false). Needs the token permission above.
+# Edge rate limit for the Tolon site, 100 requests per 10 s per IP (default false). Needs the token permission above.
+# The rate limit and the contact address are both on in the live setup.
 # enable_tolon_rate_limit = true
 
-# Tolon poll contact address tolon@<domain>, forwarded to admin_email by Email Routing (default false).
+# Tolon contact address tolon@<domain>, forwarded to admin_email by Email Routing (default false).
 # Adds the apex MX and SPF records. Cloudflare creates its own DKIM record, which is not in Terraform.
 # enable_tolon_contact = true
