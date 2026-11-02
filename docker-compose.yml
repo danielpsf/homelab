@@ -5,6 +5,7 @@ networks:
   monitoring:
   wazuh:
   tolon:
+  site:
 
 volumes:
   prometheus_data:
@@ -43,6 +44,7 @@ services:
     networks:
       - tunnel
       - tolon
+      - site
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -465,6 +467,37 @@ services:
       - ./apps/tolon-site/web:/web:ro
     networks:
       - tolon
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    mem_limit: 64m
+    cpus: 0.25
+    pids_limit: 32
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # ---------------------------------------------------------------------------
+  # Personal site, danielpsf.net (static, no published ports)
+  # ---------------------------------------------------------------------------
+  site:
+    image: nginxinc/nginx-unprivileged:1.30.6-alpine@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03
+    container_name: site
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - ./apps/site/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./apps/site/web:/web:ro
+    networks:
+      - site
     security_opt:
       - no-new-privileges:true
     read_only: true

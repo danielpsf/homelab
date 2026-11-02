@@ -1,6 +1,6 @@
 locals {
   access_apps = {
-    homepage  = { subdomain = "",           service_name = "Homepage" }
+    homepage  = { subdomain = "home.",      service_name = "Homepage" }
     grafana   = { subdomain = "grafana.",   service_name = "Grafana" }
     pdf       = { subdomain = "pdf.",       service_name = "Stirling PDF" }
     n8n       = { subdomain = "n8n.",       service_name = "n8n" }
@@ -32,3 +32,4 @@ resource "cloudflare_zero_trust_access_application" "apps" {
     }
   ]
 }
+

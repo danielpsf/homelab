@@ -17,6 +17,14 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab" {
     ingress = [
       {
         hostname = var.domain
+        service  = "http://site:8080"
+      },
+      {
+        hostname = "www.${var.domain}"
+        service  = "http://site:8080"
+      },
+      {
+        hostname = "home.${var.domain}"
         service  = "http://homepage:3000"
       },
       {

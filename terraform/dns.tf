@@ -8,6 +8,8 @@ locals {
     wazuh     = "wazuh.${var.domain}"
     gotify    = "gotify.${var.domain}"
     tolon     = "tolon.${var.domain}"
+    home      = "home.${var.domain}"
+    www       = "www.${var.domain}"
   }
 }
 

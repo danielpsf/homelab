@@ -13,8 +13,8 @@ resource "cloudflare_ruleset" "tolon_rate_limit" {
   rules = [
     {
       ref         = "tolon_site_per_ip"
-      description = "100 requests per 10 s per IP on the Tolon site (a page load is about 45)"
-      expression  = "(http.host eq \"tolon.${var.domain}\")"
+      description = "100 requests per 10 s per IP on the public static sites (Tolon, danielpsf.net)"
+      expression  = "(http.host in {\"tolon.${var.domain}\" \"${var.domain}\" \"www.${var.domain}\"})"
       action      = "block"
       ratelimit = {
         characteristics     = ["cf.colo.id", "ip.src"]
