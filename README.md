@@ -1,13 +1,13 @@
 # Homelab
 
-A single Docker Compose stack running 15 containers with Terraform-managed Cloudflare infrastructure. Everything is Infrastructure as Code — no manual configuration, no secrets in version control.
+A single Docker Compose stack running 16 containers with Terraform-managed Cloudflare infrastructure. Everything is Infrastructure as Code — no manual configuration, no secrets in version control.
 
 ## Architecture
 
 ```mermaid
 graph TB
     subgraph Internet
-        CF[Cloudflare CDN + WAF]
+        CF[Cloudflare CDN + WAF<br/>DNSSEC, TLS 1.2+, DMARC, CAA]
     end
 
     subgraph Cloudflare Zero Trust
@@ -37,6 +37,10 @@ graph TB
             TP[Tolon Site<br/>static nginx]
         end
 
+        subgraph sitenet[Site Network]
+            SITE[Personal Site<br/>danielpsf.net, static nginx]
+        end
+
         subgraph monitoring[Monitoring Network]
             PROM[Prometheus]
             NE[Node Exporter]
@@ -53,9 +57,10 @@ graph TB
     end
 
     CF --> ZT --> CFD
-    CF -.->|public site, no Access| CFD
+    CF -.->|public sites, no Access| CFD
     CFD --> HP & GF & N8N & PORT & SPDF & WD & GOT
     CFD -->|tolon network| TP
+    CFD -->|site network| SITE
     HP -.->|widgets| GF & PORT & GOT & Sonarr & Radarr & Jellyfin & Deluge & CFD
     GF --> PROM
     PROM --> NE & BE & SE & N8N
@@ -64,7 +69,7 @@ graph TB
     WM -->|alerts| N8N
     N8N -->|push| GOT
     AGENT -->|1514/1515| WM
-    BE -.->|probes| CF
+    BE -.->|probes public sites| CF
 ```
 
 ## Network Topology
@@ -89,6 +94,11 @@ graph LR
         tolon-site
     end
 
+    subgraph site[site network]
+        direction TB
+        site-nginx[site]
+    end
+
     subgraph monitoring[monitoring network]
         direction TB
         prometheus
@@ -103,6 +113,7 @@ graph LR
     end
 
     cloudflared -.->|also joins| tolon
+    cloudflared -.->|also joins| site
     homepage -.-> monitoring
     grafana -.-> monitoring
     n8n -.-> monitoring
@@ -110,7 +121,7 @@ graph LR
     blackbox-exporter -.-> wazuh
 ```
 
-Services connect to multiple networks as needed. Only `cloudflared` faces the internet. `tolon-site` is not on the `tunnel` network: it has its own `tolon` network, shared only with `cloudflared`, so no other service can reach it. Prometheus, Node Exporter, and Speedtest Exporter have no tunnel access.
+Services connect to multiple networks as needed. Only `cloudflared` faces the internet. The two public static sites are not on the `tunnel` network: `tolon-site` has its own `tolon` network and `site` (the personal site at the apex) has its own `site` network, each shared only with `cloudflared`, so no other service can reach them. Prometheus, Node Exporter, and Speedtest Exporter have no tunnel access.
 
 ## Wazuh Alert Pipeline
 
@@ -160,15 +171,20 @@ graph TD
         TUNNEL[Zero Trust Tunnel]
         DNS[DNS CNAME Records]
         ACCESS[Access Applications<br/>+ OTP Policies]
-        WAF[Rate Limiting Rules]
+        WAF[WAF: Free Managed Ruleset,<br/>custom rules, rate limit]
+        ZONE[Zone: DNSSEC, TLS 1.2+,<br/>Always HTTPS, Always Online]
+        MAIL[DMARC + CAA records]
     end
 
     subgraph Managed Resources
         R1[cloudflare_zero_trust_tunnel_cloudflared]
         R2[cloudflare_zero_trust_tunnel_cloudflared_config]
-        R3["cloudflare_dns_record (x8)"]
+        R3["cloudflare_dns_record tunnel (x10)"]
         R4["cloudflare_zero_trust_access_application (x6)"]
         R7["cloudflare_ruleset http_ratelimit (opt-in)"]
+        R8["cloudflare_ruleset firewall managed + custom"]
+        R9["cloudflare_zone_dnssec + cloudflare_zone_setting (x3)"]
+        R10["cloudflare_dns_record DMARC + CAA (x6)"]
     end
 
     R1 --> TUNNEL
@@ -176,18 +192,21 @@ graph TD
     R3 --> DNS
     R4 --> ACCESS
     R7 --> WAF
+    R8 --> WAF
+    R9 --> ZONE
+    R10 --> MAIL
 
     DNS -->|CNAME| TUNNEL
     ACCESS -->|protects| TUNNEL
 ```
 
-Terraform manages 17 always-on resources: the random tunnel secret, the tunnel, its ingress config, 8 DNS records, and 6 Zero Trust access apps. Each app covers a whole hostname and requires email OTP before reaching the application. Gotify uses token-based authentication only (the Android app cannot handle Cloudflare Access OTP).
+Terraform manages 31 always-on resources: the random tunnel secret, the tunnel, its ingress config, 10 tunnel DNS records, 6 Zero Trust access apps, and 12 hardening resources in `hardening.tf` (DNSSEC, 3 zone settings, DMARC, 5 CAA records, the managed and custom WAF rulesets). Each app covers a whole hostname and requires email OTP before reaching the application. Gotify uses token-based authentication only (the Android app cannot handle Cloudflare Access OTP).
 
-`tolon.<domain>` is a public static site with no Access app (see [`apps/tolon-site/README.md`](apps/tolon-site/README.md)). Two groups of resources are conditional:
+The apex `<domain>` (with `www.` redirecting to it) and `tolon.<domain>` are public static sites with no Access app (see [`apps/tolon-site/README.md`](apps/tolon-site/README.md)). The Homepage dashboard lives at `home.<domain>`. Two groups of resources are conditional:
 
 | File | Resource | Switch | API token permission |
 |------|----------|--------|----------------------|
-| `ratelimit.tf` | `http_ratelimit` ruleset: 100 requests per 10 s per IP and colo on the Tolon host, block for 10 s (the free plan allows one rule). Clients see Cloudflare error 1015. | `enable_tolon_rate_limit = true` | Zone > Zone WAF > Edit |
+| `ratelimit.tf` | `http_ratelimit` ruleset: 100 requests per 10 s per IP and colo on the public static hosts (apex, `www.`, `tolon.`), block for 10 s (the free plan allows one rule). Clients see Cloudflare error 1015. | `enable_tolon_rate_limit = true` | Zone > Zone WAF > Edit |
 | `email_routing.tf` | Email Routing settings, DNS, the verified admin address and a rule that forwards `tolon@<domain>` to the admin address | `enable_tolon_contact = true` | Zone > Email Routing Rules > Edit, Account > Email Routing Addresses > Edit |
 
 Both switches are on in the real `terraform.tfvars`. Email Routing adds the MX and SPF records at the zone apex, and Cloudflare creates its own DKIM record, which is not in Terraform. The token in use also has Zone > Zone Settings > Edit.
@@ -201,14 +220,14 @@ alias tofu='docker run --rm -it -v "$PWD/terraform":/work -w /work ghcr.io/opent
 tofu plan -target=cloudflare_dns_record.tunnel -target=cloudflare_zero_trust_tunnel_cloudflared_config.homelab
 ```
 
-Applies are targeted. The Grafana Access app has drift that is still open: an `allow-mcp` policy was created outside Terraform, and a full apply would try to revert it. Keep applies targeted until the drift is resolved (by importing the policy into Terraform or by removing it). Always pass `-target` for the resources you mean to change, and read the plan before applying. Back up `terraform.tfstate` first (the `pre-*.tfstate` files in `terraform/` are such copies, and are gitignored). State files have mode 600, because they hold secrets.
+A full `tofu plan` is clean. The Grafana Access app has an extra `allow-mcp` policy that admits the Grafana MCP client by Access service token; it is in Terraform, and its token client ID comes from `grafana_mcp_service_token_id` in `terraform.tfvars` (leave it empty for email OTP only). Read the plan before applying. Back up `terraform.tfstate` first (the `pre-*.tfstate` files in `terraform/` are such copies, and are gitignored). State files have mode 600, because they hold secrets.
 
 ## Services
 
 | Service | Purpose | Public | Port |
 |---------|---------|--------|------|
 | **cloudflared** | Cloudflare Tunnel ingress | Gateway | - |
-| **homepage** | Dashboard with service widgets | `https://domain.com` | - |
+| **homepage** | Dashboard with service widgets | `https://home.domain.com` | - |
 | **portainer** | Container management | `https://portainer.domain.com` | - |
 | **stirling-pdf** | PDF manipulation tools | `https://pdf.domain.com` | - |
 | **gotify** | Push notifications | `https://gotify.domain.com` | - |
@@ -222,6 +241,7 @@ Applies are targeted. The Grafana Access app has drift that is still open: an `a
 | **wazuh-manager** | SIEM analysis engine | Internal only | 1514, 1515, 55000 |
 | **wazuh-dashboard** | Security monitoring UI | `https://wazuh.domain.com` | - |
 | **tolon-site** | Static results page of the Tolon icon poll ([details](apps/tolon-site/README.md)) | `https://tolon.domain.com` | - |
+| **site** | Personal site, static pages and CV PDFs | `https://domain.com` (`www.` redirects) | - |
 
 ## Security
 
@@ -232,7 +252,17 @@ Every public service is protected by two layers:
 
 **Exception, Tolon site:** `tolon.<domain>` has no Access gate. It is a static page with no backend, no database and no forms. nginx adds per-IP request limits, the security headers and a Cloudflare edge rate limit. See [`apps/tolon-site/README.md`](apps/tolon-site/README.md).
 
+**Exception, personal site:** the apex `<domain>` serves the personal site with the same design as the Tolon site: static files only, GET and HEAD only, a strict CSP with no third-party origins, nginx per-IP limits and the shared edge rate limit.
+
 **Exception:** Gotify is protected by Cloudflare Tunnel (no exposed ports) + WAF/DDoS protection + its built-in token authentication, but does **not** have a Cloudflare Access policy. The Gotify Android app makes direct HTTP/WebSocket calls and cannot handle the email OTP flow. Registration is disabled (`GOTIFY_REGISTRATION=false`).
+
+### Edge Hardening (`terraform/hardening.tf`)
+- DNSSEC on the zone (the registrar is Cloudflare, so the DS record is published automatically)
+- Minimum TLS 1.2, Always Use HTTPS, Always Online
+- DMARC `p=reject`: no mail is sent from the domain, Email Routing only receives
+- CAA: only the CAs that Cloudflare Universal SSL uses may issue certificates
+- Cloudflare Free Managed Ruleset, plus 2 custom rules on the static hosts: block methods other than GET, HEAD and OPTIONS, and block common exploit probes (`/wp-`, `/.env`, `/.git`, `.php`, ...)
+- Prometheus job `public-sites` probes the public sites end to end through Cloudflare
 
 ### Container Hardening
 All containers follow a hardened baseline:
@@ -240,7 +270,7 @@ All containers follow a hardened baseline:
 - `cap_drop: [ALL]` — only add back capabilities that are strictly required
 - `read_only: true` with `tmpfs` mounts where possible
 - No containers expose ports to the host except Wazuh Manager (agent enrollment)
-- `tolon-site` runs as the unprivileged nginx user on its own `tolon` network, shared only with `cloudflared`
+- `tolon-site` and `site` run as the unprivileged nginx user on their own networks (`tolon`, `site`), each shared only with `cloudflared`
 
 ### Secrets Management
 - **Docker**: All secrets live in `.env` (gitignored). Config files use `${VAR}` substitution.
@@ -304,7 +334,7 @@ The skill is defined in `.opencode/skills/security-analyst/SKILL.md` and can be 
 
 ```
 homelab/
-├── docker-compose.yml              # All 15 services
+├── docker-compose.yml              # All 16 services
 ├── .env.sample                     # Environment template (copy to .env)
 ├── .gitattributes                  # git-crypt encryption patterns
 ├── .gitignore
@@ -318,6 +348,9 @@ homelab/
 │       ├── investigations/         # Dated investigation reports
 │       └── scans/                  # Trivy and CVE scan results
 ├── apps/
+│   ├── site/                       # Personal site at the apex
+│   │   ├── nginx.conf              # Headers, CSP, caching, rate limit
+│   │   └── web/                    # Built pages, deployed by rsync (gitignored)
 │   └── tolon-site/                 # Static results page of the Tolon icon poll (see its README)
 │       ├── nginx.conf              # Headers, caching, rate limit
 │       ├── web/                    # Results page, /preview/
@@ -363,6 +396,8 @@ homelab/
     ├── dns.tf                      # CNAME records
     ├── access.tf                   # Zero Trust access policies
     ├── ratelimit.tf                # Opt-in edge rate limit
+    ├── hardening.tf                # DNSSEC, TLS, DMARC, CAA, WAF rules
+    ├── email_routing.tf            # Opt-in contact address forwarding
     ├── variables.tf
     ├── outputs.tf
     ├── versions.tf
@@ -420,7 +455,7 @@ docker run --rm httpd:2-alpine htpasswd -nbB admin 'YourPassword' | cut -d: -f2 
 # Initialize and apply Terraform
 cd terraform
 tofu init    # or: terraform init
-tofu apply   # or: terraform apply (see "Running OpenTofu" for targeted applies)
+tofu apply   # or: terraform apply (see "Running OpenTofu")
 
 # Copy the tunnel token from output to .env (CLOUDFLARE_TUNNEL_TOKEN)
 cd ..
@@ -448,9 +483,11 @@ docker compose up -d
 5. Update placeholder values: `YOUR_DATA_TABLE_ID`, `YOUR_GEMINI_CREDENTIAL_ID`, `YOUR_SMTP_CREDENTIAL_ID`, `YOUR_GOTIFY_APP_TOKEN`, and the email addresses
 6. Activate the workflow
 
-### 8. Tolon site
+### 8. Static sites
 
-No setup beyond `docker compose up -d tolon-site`. The page is static; see [`apps/tolon-site/README.md`](apps/tolon-site/README.md).
+Tolon: no setup beyond `docker compose up -d tolon-site`. The page is static; see [`apps/tolon-site/README.md`](apps/tolon-site/README.md).
+
+Personal site: copy the built pages into `apps/site/web/` (for example `rsync -a --delete <build>/ apps/site/web/`), then `docker compose up -d site`. If the inline JSON-LD changes, update its `sha256` hashes in the CSP in `apps/site/nginx.conf`.
 
 ### 9. Install Wazuh agent (optional)
 
