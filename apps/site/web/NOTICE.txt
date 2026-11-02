@@ -1,0 +1,12 @@
+danielpsf.net design variants. Third-party material in this site:
+
+Swiss Moss v1.1.0, (c) Daniel Fernandes, Apache License 2.0.
+  Source: https://github.com/danielpsf/swiss-moss
+  Files vendored unmodified: vendor/swiss-moss/css/swiss-moss.css, vendor/swiss-moss/tokens/tokens.css (variant v3 ships tokens.css only).
+  Licence text: vendor/swiss-moss/LICENSE. The repository ships no NOTICE file of its own.
+  Not shipped: js/swiss-moss.js (the only script is js/menu.js, written for this site).
+
+Inter and Inter Display, (c) The Inter Project Authors, SIL Open Font License 1.1.
+  Source: https://github.com/rsms/inter
+  fonts/*.woff2 are Latin subsets of Inter Regular, Inter SemiBold and Inter Display SemiBold. Licence text: fonts/OFL-1.1-Inter.txt.
+  Inter Display replaces the Inter Tight face named in the Swiss Moss tokens (overridden in css/site.css).

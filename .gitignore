@@ -32,5 +32,3 @@ Thumbs.db
 # Local security data (investigation reports, scans, FP catalog)
 .local/
 
-# Personal site build output, deployed by rsync from the career-2026 workspace
-apps/site/web/
