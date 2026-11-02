@@ -34,3 +34,6 @@ admin_email = "your-email@example.com"
 # Tolon contact address tolon@<domain>, forwarded to admin_email by Email Routing (default false).
 # Adds the apex MX and SPF records. Cloudflare creates its own DKIM record, which is not in Terraform.
 # enable_tolon_contact = true
+
+# Client ID of the Access service token for the Grafana MCP client (optional; empty = email OTP only)
+# grafana_mcp_service_token_id = ""

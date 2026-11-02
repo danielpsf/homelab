@@ -35,3 +35,9 @@ variable "enable_tolon_contact" {
   type        = bool
   default     = false
 }
+
+variable "grafana_mcp_service_token_id" {
+  description = "Client ID of the Access service token the Grafana MCP client uses (empty = email OTP only). The token itself was created in the dashboard; its secret is in Bitwarden."
+  type        = string
+  default     = ""
+}
