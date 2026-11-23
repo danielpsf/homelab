@@ -625,3 +625,38 @@ html {
     grid-column: 1/-1;
   }
 }
+
+.links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.links svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+/* long role titles: keep the date on the same row, cut the title in the middle */
+@media (min-width: 36em) {
+  .roles li:has(> .mid) {
+    flex-wrap: nowrap;
+    align-items: baseline;
+  }
+  .roles strong.mid {
+    /* width 0 + grow: the nowrap title adds nothing to the grid track's min-content */
+    display: flex;
+    width: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .roles .mid > span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .roles .mid > span + span {
+    flex: none;
+    margin-left: 0.3em;
+  }
+}
